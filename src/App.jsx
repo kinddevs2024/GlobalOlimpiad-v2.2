@@ -24,7 +24,14 @@ import ProfileEdit from "./pages/ProfileEdit";
 import CompleteProfile from "./pages/CompleteProfile";
 import ResolterPanel from "./pages/ResolterPanel";
 import SchoolTeacherPanel from "./pages/SchoolTeacherPanel";
+import Settings from "./pages/Settings";
+import Home from "./pages/Home";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Services from "./pages/Services";
 import { USER_ROLES, GOOGLE_CLIENT_ID } from "./utils/constants";
+import { ThemeProvider } from "./context/ThemeContext";
+import { TranslationProvider } from "./context/TranslationContext";
 import "./styles/globals.css";
 import "./styles/animations.css";
 
@@ -34,8 +41,28 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route
+        path="/"
+        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Home />}
+      />
+
+      <Route
         path="/auth"
         element={isAuthenticated ? <Navigate to="/dashboard" /> : <Auth />}
+      />
+
+      <Route
+        path="/about"
+        element={isAuthenticated ? <Navigate to="/dashboard" /> : <About />}
+      />
+
+      <Route
+        path="/contact"
+        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Contact />}
+      />
+
+      <Route
+        path="/services"
+        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Services />}
       />
 
       <Route
@@ -164,8 +191,16 @@ const AppRoutes = () => {
         }
       />
 
-      <Route path="/" element={<Navigate to="/dashboard" />} />
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };
@@ -173,19 +208,23 @@ const AppRoutes = () => {
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <AuthProvider>
-        <SocketProvider>
-          <Router>
-            <ScrollToTop />
-            <div className="app">
-              <Navbar />
-              <main className="main-content">
-                <AppRoutes />
-              </main>
-            </div>
-          </Router>
-        </SocketProvider>
-      </AuthProvider>
+      <TranslationProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <SocketProvider>
+              <Router>
+                <ScrollToTop />
+                <div className="app">
+                  <Navbar />
+                  <main className="main-content">
+                    <AppRoutes />
+                  </main>
+                </div>
+              </Router>
+            </SocketProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </TranslationProvider>
     </GoogleOAuthProvider>
   );
 }

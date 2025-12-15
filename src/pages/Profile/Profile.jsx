@@ -26,9 +26,14 @@ const Profile = () => {
       <div className="container">
         <div className="profile-header">
           <h1 className="profile-title text-glow">My Profile</h1>
-          <Link to="/profile/edit" className="button-primary">
-            Edit Profile
-          </Link>
+          <div className="profile-actions">
+            <Link to="/profile/edit" className="button-primary">
+              Edit Profile
+            </Link>
+            <Link to="/settings" className="button-secondary">
+              Settings
+            </Link>
+          </div>
         </div>
 
         <div className="profile-content">

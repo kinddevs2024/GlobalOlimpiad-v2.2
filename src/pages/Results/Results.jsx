@@ -696,6 +696,58 @@ const Results = () => {
           )}
         </div>
 
+        {/* Top 3 Winners Section */}
+        {topThree.length > 0 && (
+          <div className="top-three-section">
+            <h3 className="section-title">🏆 Top 3 Winners</h3>
+            <div className="top-three-grid">
+              {topThree.map((topResult, index) => {
+                const isCurrentUser =
+                  topResult.userId === user._id ||
+                  topResult.user?._id === user._id;
+                const topPercentage =
+                  topResult.percentage ||
+                  (topResult.totalPoints
+                    ? Math.round(
+                        (topResult.score / topResult.totalPoints) * 100
+                      )
+                    : 0);
+
+                return (
+                  <div
+                    key={topResult.userId || topResult._id || index}
+                    className={`top-three-card card ${
+                      isCurrentUser ? "current-user" : ""
+                    }`}
+                  >
+                    <div className="top-three-rank">
+                      {topResult.position ||
+                        (topResult.rank === 1
+                          ? "🥇"
+                          : topResult.rank === 2
+                          ? "🥈"
+                          : "🥉")}
+                    </div>
+                    <div className="top-three-info">
+                      <div className="top-three-name">
+                        {isCurrentUser
+                          ? "You"
+                          : topResult.userName || "Anonymous"}
+                      </div>
+                      <div className="top-three-score">
+                        {topResult.score} / {topResult.totalPoints || 100}
+                      </div>
+                      <div className="top-three-percentage">
+                        {topPercentage}%
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Show all results table for admins/owners/resolters */}
         {canViewAllResults && allResults.length > 0 && (
           <div className="all-results-table-section">
@@ -917,58 +969,6 @@ const Results = () => {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Top 3 Winners Section */}
-        {topThree.length > 0 && (
-          <div className="top-three-section">
-            <h3 className="section-title">🏆 Top 3 Winners</h3>
-            <div className="top-three-grid">
-              {topThree.map((topResult, index) => {
-                const isCurrentUser =
-                  topResult.userId === user._id ||
-                  topResult.user?._id === user._id;
-                const topPercentage =
-                  topResult.percentage ||
-                  (topResult.totalPoints
-                    ? Math.round(
-                        (topResult.score / topResult.totalPoints) * 100
-                      )
-                    : 0);
-
-                return (
-                  <div
-                    key={topResult.userId || topResult._id || index}
-                    className={`top-three-card card ${
-                      isCurrentUser ? "current-user" : ""
-                    }`}
-                  >
-                    <div className="top-three-rank">
-                      {topResult.position ||
-                        (topResult.rank === 1
-                          ? "🥇"
-                          : topResult.rank === 2
-                          ? "🥈"
-                          : "🥉")}
-                    </div>
-                    <div className="top-three-info">
-                      <div className="top-three-name">
-                        {isCurrentUser
-                          ? "You"
-                          : topResult.userName || "Anonymous"}
-                      </div>
-                      <div className="top-three-score">
-                        {topResult.score} / {topResult.totalPoints || 100}
-                      </div>
-                      <div className="top-three-percentage">
-                        {topPercentage}%
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
         )}

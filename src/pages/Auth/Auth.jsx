@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "../../context/TranslationContext";
 import NotificationToast from "../../components/NotificationToast";
 import { testAPIConnection } from "../../utils/apiTest";
+import Intro from "../../components/Intro";
 import "./Auth.css";
 
 const Auth = () => {
@@ -18,7 +20,10 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [showIntro, setShowIntro] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
   const { login, register, loginWithGoogle } = useAuth();
+  const { initializeFromGoogleLocale } = useTranslation();
   const navigate = useNavigate();
 
   // Test API connection on mount
@@ -97,7 +102,14 @@ const Auth = () => {
       if (result.success) {
         // Redirect to complete profile page after registration
         if (!isLogin) {
-          navigate("/complete-profile");
+          // Check if user has already seen the intro
+          const introWatched = localStorage.getItem("introWatched");
+          if (!introWatched) {
+            setIsNewUser(true);
+            setShowIntro(true);
+          } else {
+            navigate("/complete-profile");
+          }
         } else {
           navigate("/dashboard");
         }
@@ -136,6 +148,11 @@ const Auth = () => {
 
       const userInfo = await userInfoResponse.json();
 
+      // Initialize translation from Google user locale
+      if (userInfo.locale) {
+        initializeFromGoogleLocale(userInfo.locale);
+      }
+
       // Send access token to backend for authentication
       const result = await loginWithGoogle(tokenResponse.access_token);
 
@@ -152,7 +169,14 @@ const Auth = () => {
           (user.role !== "student" || (user.schoolName && user.schoolId));
 
         if (!hasCompleteInfo) {
-          navigate("/complete-profile");
+          // Check if user has already seen the intro (for new Google users)
+          const introWatched = localStorage.getItem("introWatched");
+          if (!introWatched) {
+            setIsNewUser(true);
+            setShowIntro(true);
+          } else {
+            navigate("/complete-profile");
+          }
         } else {
           navigate("/dashboard");
         }
@@ -260,6 +284,16 @@ const Auth = () => {
       </button>
     );
   };
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+    navigate("/complete-profile");
+  };
+
+  // Show intro video if needed
+  if (showIntro) {
+    return <Intro onComplete={handleIntroComplete} />;
+  }
 
   return (
     <div className="auth-page">

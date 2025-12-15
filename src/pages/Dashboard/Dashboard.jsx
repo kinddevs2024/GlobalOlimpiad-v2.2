@@ -9,16 +9,20 @@ import {
 } from "../../utils/helpers";
 import { OLYMPIAD_TYPES, USER_ROLES } from "../../utils/constants";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import Pagination from "../../components/Pagination";
 import "./Dashboard.css";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { itemsPerPage } = useTheme();
   const navigate = useNavigate();
   const [olympiads, setOlympiads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOlympiad, setSelectedOlympiad] = useState(null);
   const [olympiadDetails, setOlympiadDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Determine user role
   const isAdminOrOwner =
@@ -89,6 +93,23 @@ const Dashboard = () => {
     if (filter === "ended") return getEndedOlympiads();
 
     return visibleOlympiads;
+  };
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
+
+  // Get paginated olympiads
+  const getPaginatedOlympiads = (olympiadsList) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return olympiadsList.slice(startIndex, endIndex);
+  };
+
+  // Calculate total pages
+  const getTotalPages = (olympiadsList) => {
+    return Math.ceil(olympiadsList.length / itemsPerPage);
   };
 
   // Get time-based status badge (Active, Upcoming, Ended)
@@ -363,40 +384,52 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <div className="olympiads-grid">
-              {(() => {
-                let displayOlympiads = [];
-                let emptyMessage = "";
+            {(() => {
+              let displayOlympiads = [];
+              let emptyMessage = "";
 
-                if (filter === null) {
-                  // Show active olympiads (default)
-                  displayOlympiads = activeOlympiads;
-                  emptyMessage = "No active olympiads available at this time.";
-                } else if (filter === "upcoming") {
-                  // Show upcoming olympiads
-                  displayOlympiads = upcomingOlympiads;
-                  emptyMessage = "No upcoming olympiads.";
-                } else if (filter === "ended") {
-                  // Show ended olympiads
-                  displayOlympiads = endedOlympiads;
-                  emptyMessage = "No finished olympiads.";
-                }
+              if (filter === null) {
+                // Show active olympiads (default)
+                displayOlympiads = activeOlympiads;
+                emptyMessage = "No active olympiads available at this time.";
+              } else if (filter === "upcoming") {
+                // Show upcoming olympiads
+                displayOlympiads = upcomingOlympiads;
+                emptyMessage = "No upcoming olympiads.";
+              } else if (filter === "ended") {
+                // Show ended olympiads
+                displayOlympiads = endedOlympiads;
+                emptyMessage = "No finished olympiads.";
+              }
 
-                if (displayOlympiads.length === 0) {
-                  return (
-                    <div className="empty-state">
-                      <div className="empty-icon">📚</div>
-                      <h3>No olympiads found</h3>
-                      <p>{emptyMessage}</p>
-                    </div>
-                  );
-                }
+              const paginatedOlympiads = getPaginatedOlympiads(displayOlympiads);
+              const totalPages = getTotalPages(displayOlympiads);
 
-                return displayOlympiads.map((olympiad) =>
-                  renderOlympiadCard(olympiad)
+              if (displayOlympiads.length === 0) {
+                return (
+                  <div className="empty-state">
+                    <div className="empty-icon">📚</div>
+                    <h3>No olympiads found</h3>
+                    <p>{emptyMessage}</p>
+                  </div>
                 );
-              })()}
-            </div>
+              }
+
+              return (
+                <>
+                  <div className="olympiads-grid">
+                    {paginatedOlympiads.map((olympiad) =>
+                      renderOlympiadCard(olympiad)
+                    )}
+                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </>
+              );
+            })()}
           </>
         ) : (
           // Admin/Owner view: Show filter tabs
@@ -434,19 +467,26 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <div className="olympiads-grid">
-              {filteredOlympiads.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">📚</div>
-                  <h3>No olympiads found</h3>
-                  <p>There are no olympiads matching your filter.</p>
+            {filteredOlympiads.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📚</div>
+                <h3>No olympiads found</h3>
+                <p>There are no olympiads matching your filter.</p>
+              </div>
+            ) : (
+              <>
+                <div className="olympiads-grid">
+                  {getPaginatedOlympiads(filteredOlympiads).map((olympiad) =>
+                    renderOlympiadCard(olympiad)
+                  )}
                 </div>
-              ) : (
-                filteredOlympiads.map((olympiad) =>
-                  renderOlympiadCard(olympiad)
-                )
-              )}
-            </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={getTotalPages(filteredOlympiads)}
+                  onPageChange={setCurrentPage}
+                />
+              </>
+            )}
           </>
         )}
 

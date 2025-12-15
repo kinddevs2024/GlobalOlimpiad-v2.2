@@ -19,6 +19,12 @@
   animation: fadeIn 0.5s ease;
 }
 
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .profile-title {
   font-size: 48px;
   font-weight: 700;
@@ -155,6 +161,16 @@
     flex-direction: column;
     gap: 20px;
     align-items: stretch;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .profile-actions .button-primary,
+  .profile-actions .button-secondary {
+    width: 100%;
   }
 
   .profile-title {
