@@ -1,0 +1,281 @@
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import PortfolioRenderer from "../../components/Portfolio/PortfolioRenderer";
+import { portfolioAPI } from "../../services/portfolioAPI";
+import { usePortfolioAnalytics } from "../../hooks/usePortfolioAnalytics";
+import { normalizeTheme, DEFAULT_THEME } from "../../utils/portfolioThemes";
+import "./PortfolioView.css";
+
+// Normalize portfolio structure from backend format to frontend format
+const normalizePortfolioFromBackend = (backendPortfolio) => {
+  const normalized = { ...backendPortfolio };
+  
+  // Normalize theme: backend has { colors, fonts, styles } -> frontend needs { colors, typography, spacing }
+  if (normalized.theme) {
+    const backendTheme = normalized.theme;
+    normalized.theme = {
+      name: backendTheme.name || "minimal",
+      colors: {
+        primary: backendTheme.colors?.primary || "#000000",
+        secondary: backendTheme.colors?.secondary || "#666666",
+        background: backendTheme.colors?.background || "#FFFFFF",
+        text: backendTheme.colors?.text || "#000000",
+        accent: backendTheme.colors?.accent || "#0066FF",
+      },
+      typography: {
+        fontFamily: backendTheme.fonts?.body || backendTheme.fonts?.heading || "Inter, system-ui, sans-serif",
+        headingSize: backendTheme.styles?.headingSize || "2.5rem",
+        bodySize: backendTheme.styles?.bodySize || "1rem",
+      },
+      spacing: backendTheme.styles?.spacing || "normal",
+    };
+    // Normalize using our theme normalizer
+    normalized.theme = normalizeTheme(normalized.theme);
+  } else {
+    normalized.theme = normalizeTheme(DEFAULT_THEME);
+  }
+  
+  // Normalize sections: backend has { type, title, content/items, order } -> frontend needs { id, type, enabled, order, title, content }
+  if (normalized.sections && Array.isArray(normalized.sections)) {
+    normalized.sections = normalized.sections.map((section, index) => {
+      const normalizedSection = {
+        id: section.id || `${section.type}-${index + 1}`,
+        type: section.type,
+        enabled: section.enabled !== false,
+        order: section.order !== undefined ? section.order : index,
+        title: section.title || section.type.charAt(0).toUpperCase() + section.type.slice(1),
+      };
+      
+      // Normalize content based on section type
+      if (section.items) {
+        normalizedSection.content = { [section.type]: section.items };
+      } else if (section.content) {
+        if (typeof section.content === 'string') {
+          normalizedSection.content = { text: section.content };
+        } else {
+          normalizedSection.content = section.content;
+        }
+      } else if (section.type === 'about' && !section.content && !section.items) {
+        normalizedSection.content = { text: "" };
+      } else if (section.type === 'skills' && !section.content && !section.items) {
+        normalizedSection.content = { skills: [] };
+      } else if (section.type === 'achievements' && !section.content && !section.items) {
+        normalizedSection.content = { achievements: [] };
+      } else if (section.type === 'projects' && !section.content && !section.items) {
+        normalizedSection.content = { projects: [] };
+      } else if (section.type === 'education' && !section.content && !section.items) {
+        normalizedSection.content = { education: [] };
+      } else if (section.type === 'certificates' && !section.content && !section.items) {
+        normalizedSection.content = { certificates: [] };
+      }
+      
+      return normalizedSection;
+    });
+  } else {
+    normalized.sections = [];
+  }
+  
+  // Handle certificates array - merge into sections if certificates section doesn't exist
+  if (normalized.certificates && Array.isArray(normalized.certificates) && normalized.certificates.length > 0) {
+    const hasCertificatesSection = normalized.sections.some(s => s.type === 'certificates');
+    if (!hasCertificatesSection) {
+      normalized.sections.push({
+        id: 'certificates-1',
+        type: 'certificates',
+        enabled: true,
+        order: normalized.sections.length,
+        title: 'Certificates',
+        content: { certificates: normalized.certificates },
+      });
+    } else {
+      const certSection = normalized.sections.find(s => s.type === 'certificates');
+      if (certSection && (!certSection.content?.certificates || certSection.content.certificates.length === 0)) {
+        certSection.content = { certificates: normalized.certificates };
+      }
+    }
+  }
+  
+  // Ensure logo field exists
+  if (!normalized.logo) {
+    normalized.logo = "";
+  }
+
+  // Ensure hero section exists - preserve backend hero data if it exists
+  if (!normalized.hero) {
+    normalized.hero = {
+      title: "",
+      subtitle: "",
+      image: "",
+      ctaText: "",
+      ctaLink: null, // Allow null
+    };
+  } else {
+    // Ensure all hero fields are present, preserving backend values
+    normalized.hero = {
+      title: normalized.hero.title || "",
+      subtitle: normalized.hero.subtitle || "",
+      image: normalized.hero.image || "",
+      ctaText: normalized.hero.ctaText || "",
+      ctaLink: normalized.hero.ctaLink !== undefined ? normalized.hero.ctaLink : null, // Preserve null if set
+    };
+  }
+  
+  // Ensure animations object exists
+  if (!normalized.animations) {
+    normalized.animations = {
+      enabled: true,
+      type: "fade",
+    };
+  }
+  
+  // Map isPublic to visibility
+  if (normalized.isPublic !== undefined && !normalized.visibility) {
+    normalized.visibility = normalized.isPublic ? "public" : "private";
+  } else if (!normalized.visibility) {
+    normalized.visibility = "public";
+  }
+  
+  return normalized;
+};
+
+const PortfolioView = () => {
+  const { slug, sectionId } = useParams();
+  const [portfolio, setPortfolio] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Apply portfolio's theme to body when portfolio loads
+  // Portfolio theme is different from user's Settings theme
+  useEffect(() => {
+    if (portfolio && portfolio.theme) {
+      const normalizedTheme = normalizeTheme(portfolio.theme);
+      // Apply portfolio's background color to body
+      document.body.style.backgroundColor = normalizedTheme.colors.background || "#ffffff";
+      document.body.style.color = normalizedTheme.colors.text || "#000000";
+    }
+    
+    return () => {
+      // Reset body styles when component unmounts
+      document.body.style.backgroundColor = "";
+      document.body.style.color = "";
+    };
+  }, [portfolio]);
+
+  // Debug: Log slug to verify route is working
+  useEffect(() => {
+    console.log("PortfolioView mounted with slug:", slug);
+  }, [slug]);
+
+  useEffect(() => {
+    const fetchPortfolio = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await portfolioAPI.getPortfolioBySlug(slug);
+        
+        console.log("Full API response:", response);
+        console.log("Response.data:", response?.data);
+        
+        // Handle nested response structure: { success: true, data: {...} }
+        let portfolioData = null;
+        if (response && response.data) {
+          // Check for nested structure first: { success: true, data: {...} }
+          if (response.data.success !== undefined && response.data.data) {
+            console.log("Found nested structure with success flag");
+            portfolioData = response.data.data;
+          } 
+          // Check if response.data itself is the portfolio (has _id or slug)
+          else if (response.data._id || response.data.slug) {
+            console.log("Found direct portfolio object");
+            portfolioData = response.data;
+          }
+          // If response.data has a data property, try that
+          else if (response.data.data) {
+            console.log("Found data property in response.data");
+            portfolioData = response.data.data;
+          }
+        }
+        
+        console.log("Extracted portfolioData:", portfolioData);
+
+        if (portfolioData) {
+          // Normalize portfolio structure from backend format to frontend format
+          const normalizedPortfolio = normalizePortfolioFromBackend(portfolioData);
+          console.log("Final normalized portfolio data:", normalizedPortfolio);
+          setPortfolio(normalizedPortfolio);
+        } else {
+          setError("Portfolio not found.");
+        }
+      } catch (err) {
+        console.error("Error fetching portfolio:", err);
+        // Handle network errors vs API errors
+        if (err.code === "ERR_NETWORK" || err.message?.includes("Network")) {
+          setError("Cannot connect to server. Please make sure the backend is running.");
+        } else {
+          // Backend handles privacy - if portfolio is private, backend will return error message
+          // Check for common private portfolio messages
+          const errorMessage = err.response?.data?.message || 
+                              err.response?.data?.error ||
+                              "Portfolio not found or is unavailable.";
+          
+          // If backend says portfolio is private, show that message
+          if (errorMessage.toLowerCase().includes("private") || 
+              err.response?.status === 403) {
+            setError(errorMessage);
+          } else {
+            setError(errorMessage);
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (slug) {
+      fetchPortfolio();
+    } else {
+      setLoading(false);
+      setError("Invalid portfolio URL.");
+    }
+  }, [slug]);
+
+  // Track analytics
+  usePortfolioAnalytics(portfolio?._id, portfolio?.visibility);
+
+  if (loading) {
+    return (
+      <div className="portfolio-view-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading portfolio...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="portfolio-view-error">
+        <div className="error-icon">⚠️</div>
+        <h2>Portfolio Not Found</h2>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  if (!portfolio) {
+    return (
+      <div className="portfolio-view-error">
+        <div className="error-icon">📭</div>
+        <h2>Portfolio Not Found</h2>
+        <p>This portfolio does not exist.</p>
+      </div>
+    );
+  }
+
+  // Backend handles privacy - if we get here, portfolio is accessible
+  // Just render whatever backend returned
+  console.log("RENDERING PORTFOLIO - About to render PortfolioRenderer");
+  return <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} />;
+};
+
+export default PortfolioView;
+

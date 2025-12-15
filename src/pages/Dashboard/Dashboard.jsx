@@ -359,6 +359,20 @@ const Dashboard = () => {
         {isStudent ? (
           // Student view: Show filter tabs to choose between Active, Upcoming, and Ended
           <>
+            <div className="dashboard-actions" style={{ marginBottom: "1.5rem" }}>
+              <Link
+                to="/dashboard/portfolio"
+                className="button-primary"
+                style={{
+                  display: "inline-block",
+                  padding: "0.75rem 1.5rem",
+                  textDecoration: "none",
+                  borderRadius: "8px",
+                }}
+              >
+                🎨 Create/Edit Portfolio
+              </Link>
+            </div>
             <div className="dashboard-filters">
               <button
                 className={`filter-button ${filter === null ? "active" : ""}`}

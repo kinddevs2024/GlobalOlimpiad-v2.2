@@ -29,6 +29,8 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Services from "./pages/Services";
+import PortfolioView from "./pages/PortfolioView";
+import PortfolioConstructor from "./pages/PortfolioConstructor";
 import { USER_ROLES, GOOGLE_CLIENT_ID } from "./utils/constants";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TranslationProvider } from "./context/TranslationContext";
@@ -64,6 +66,9 @@ const AppRoutes = () => {
         path="/services"
         element={isAuthenticated ? <Navigate to="/dashboard" /> : <Services />}
       />
+
+      <Route path="/portfolio/:slug" element={<PortfolioView />} />
+      <Route path="/portfolio/:slug/:sectionId" element={<PortfolioView />} />
 
       <Route
         path="/dashboard"
@@ -196,6 +201,15 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/portfolio"
+        element={
+          <ProtectedRoute>
+            <PortfolioConstructor />
           </ProtectedRoute>
         }
       />

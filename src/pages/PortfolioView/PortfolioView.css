@@ -1,0 +1,162 @@
+.portfolio-view-loading,
+.portfolio-view-error {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  /* Use neutral background for loading/error states */
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.portfolio-view-loading .loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #0066ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.portfolio-view-error .error-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.portfolio-view-error h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+}
+
+.portfolio-view-error p {
+  font-size: 1.125rem;
+  color: #666666;
+  max-width: 500px;
+}
+
+/* Private portfolio message styling */
+.portfolio-view-error.private-portfolio {
+  background-color: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.portfolio-view-error.private-portfolio .error-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.portfolio-view-error.private-portfolio h2 {
+  color: #856404;
+}
+
+.portfolio-view-error.private-portfolio p {
+  color: #856404;
+}
+
+/* Responsive Design for Portfolio View */
+
+/* iPad and Tablet (768px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .portfolio-view-loading,
+  .portfolio-view-error {
+    padding: 2rem 1.5rem;
+  }
+
+  .portfolio-view-error h2 {
+    font-size: 1.75rem;
+  }
+
+  .portfolio-view-error p {
+    font-size: 1rem;
+  }
+}
+
+/* Mobile Phones (up to 768px) */
+@media (max-width: 768px) {
+  .portfolio-view-loading,
+  .portfolio-view-error {
+    padding: 1.5rem 1rem;
+    min-height: 80vh;
+  }
+
+  .portfolio-view-loading .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+  }
+
+  .portfolio-view-error .error-icon {
+    font-size: 3rem;
+  }
+
+  .portfolio-view-error h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .portfolio-view-error p {
+    font-size: 1rem;
+    max-width: 100%;
+  }
+
+  .portfolio-view-error.private-portfolio {
+    padding: 1.5rem 1rem;
+    margin: 1rem;
+  }
+
+  .portfolio-view-error.private-portfolio .error-icon {
+    font-size: 3rem;
+  }
+
+  .portfolio-view-error.private-portfolio h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Small Mobile Phones (up to 480px) */
+@media (max-width: 480px) {
+  .portfolio-view-loading,
+  .portfolio-view-error {
+    padding: 1rem 0.75rem;
+  }
+
+  .portfolio-view-loading .loading-spinner {
+    width: 35px;
+    height: 35px;
+  }
+
+  .portfolio-view-error .error-icon {
+    font-size: 2.5rem;
+  }
+
+  .portfolio-view-error h2 {
+    font-size: 1.25rem;
+  }
+
+  .portfolio-view-error p {
+    font-size: 0.9rem;
+  }
+
+  .portfolio-view-error.private-portfolio {
+    padding: 1rem 0.75rem;
+    margin: 0.5rem;
+  }
+}
+

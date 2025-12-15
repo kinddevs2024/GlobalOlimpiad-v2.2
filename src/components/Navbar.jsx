@@ -16,6 +16,12 @@ const Navbar = () => {
   // Show navbar on public pages even if not authenticated
   const publicPages = ["/", "/about", "/contact", "/services", "/auth"];
   const isPublicPage = publicPages.includes(location.pathname);
+  const isPortfolioPage = location.pathname.startsWith("/portfolio/");
+
+  // Hide navbar on portfolio pages
+  if (isPortfolioPage) {
+    return null;
+  }
 
   if (!isAuthenticated && !isPublicPage) {
     return null;
@@ -83,6 +89,11 @@ const Navbar = () => {
               <Link to="/profile" className="navbar-link">
                 Profile
               </Link>
+              {user?.role === USER_ROLES.STUDENT && (
+                <Link to="/dashboard/portfolio" className="navbar-link">
+                  🎨 Portfolio
+                </Link>
+              )}
 
               <div className="navbar-user">
                 <span className="navbar-username">{user?.email}</span>

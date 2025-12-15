@@ -309,4 +309,7 @@ export const schoolTeacherAPI = {
   },
 };
 
+// Portfolio endpoints
+export { portfolioAPI } from "./portfolioAPI";
+
 export default api;
