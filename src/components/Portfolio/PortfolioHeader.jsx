@@ -3,6 +3,7 @@ import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "../../context/TranslationContext";
 import VerificationBadge from "../PortfolioVerification/VerificationBadge";
+import PortfolioStatusBadge from "../PortfolioStatusBadge/PortfolioStatusBadge";
 import { useVerification } from "../../hooks/useVerification";
 import "../../styles/portfolio.css";
 
@@ -198,7 +199,7 @@ const PortfolioHeader = ({ portfolio, hero }) => {
       <div className="portfolio-header-container">
         {/* Logo/Home Link */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link to={homeLink} className="portfolio-header-logo">
+          <Link to={homeLink} className="portfolio-header-logo" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             {portfolioLogo ? (
               <img
                 src={portfolioLogo}
@@ -207,6 +208,10 @@ const PortfolioHeader = ({ portfolio, hero }) => {
               />
             ) : (
               <span>{hero?.title || "Portfolio"}</span>
+            )}
+            {/* Portfolio verification status badge */}
+            {portfolio?.verificationStatus && (
+              <PortfolioStatusBadge status={portfolio.verificationStatus} size="small" />
             )}
           </Link>
           {/* Portfolio-level verification badge - always show */}

@@ -309,6 +309,90 @@ export const schoolTeacherAPI = {
   },
 };
 
+// Checker endpoints
+export const checkerAPI = {
+  // Get all portfolios for verification
+  getAllPortfolios: () => api.get("/checker/portfolios"),
+
+  // Verify portfolio
+  verifyPortfolio: (portfolioId, comment = "") =>
+    api.post(`/checker/verify/${portfolioId}`, { comment }),
+
+  // Reject portfolio
+  rejectPortfolio: (portfolioId, comment = "") =>
+    api.post(`/checker/reject/${portfolioId}`, { comment }),
+};
+
+// University endpoints
+export const universityAPI = {
+  // Get all student portfolios with filters
+  getAllStudentPortfolios: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.verificationStatus)
+      params.append("verificationStatus", filters.verificationStatus);
+    if (filters.ilsLevel) params.append("ilsLevel", filters.ilsLevel);
+    if (filters.olympiadLevel)
+      params.append("olympiadLevel", filters.olympiadLevel);
+    const query = params.toString();
+    return api.get(`/university/portfolios${query ? `?${query}` : ""}`);
+  },
+
+  // Get student contact info (if access granted)
+  getStudentContacts: (portfolioId) =>
+    api.get(`/university/contacts/${portfolioId}`),
+
+  // Unlock contacts (payment handled by backend)
+  unlockContacts: (portfolioId) =>
+    api.post(`/university/unlock-contacts/${portfolioId}`),
+
+  // Olympiad management for universities
+  getAllOlympiads: () => api.get("/university/olympiads"),
+  getOlympiadById: (id) => api.get(`/university/olympiads/${id}`),
+  createOlympiad: (data) => {
+    if (data instanceof FormData) {
+      return api.post("/university/olympiads", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    }
+    return api.post("/university/olympiads", data);
+  },
+  updateOlympiad: (id, data) => {
+    if (data instanceof FormData) {
+      return api.put(`/university/olympiads/${id}`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    }
+    return api.put(`/university/olympiads/${id}`, data);
+  },
+  deleteOlympiad: (id) => api.delete(`/university/olympiads/${id}`),
+  uploadOlympiadLogo: (logoFile, olympiadId = null) => {
+    const formData = new FormData();
+    formData.append("photo", logoFile);
+    formData.append("olympiadId", olympiadId || "");
+    let url = "/university/olympiads/upload-logo";
+    if (olympiadId) {
+      url += `?olympiadId=${olympiadId}`;
+    }
+    return api.post(url, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  getQuestions: (olympiadId) => {
+    const url = olympiadId
+      ? `/university/questions?olympiadId=${olympiadId}`
+      : "/university/questions";
+    return api.get(url);
+  },
+  addQuestion: (data) => api.post("/university/questions", data),
+
+  // Get results for university's olympiads
+  getOlympiadResults: (olympiadId) =>
+    api.get(`/university/olympiads/${olympiadId}/results`),
+  getAllOlympiadResults: () => api.get("/university/olympiads/results"),
+};
+
 // Portfolio endpoints
 export { portfolioAPI } from "./portfolioAPI";
 

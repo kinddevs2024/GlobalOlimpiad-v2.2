@@ -24,6 +24,9 @@ import ProfileEdit from "./pages/ProfileEdit";
 import CompleteProfile from "./pages/CompleteProfile";
 import ResolterPanel from "./pages/ResolterPanel";
 import SchoolTeacherPanel from "./pages/SchoolTeacherPanel";
+import CheckerPanel from "./pages/CheckerPanel";
+import UniversityDashboard from "./pages/UniversityDashboard";
+import UniversityPanel from "./pages/UniversityPanel";
 import Settings from "./pages/Settings";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -165,6 +168,33 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRole={USER_ROLES.SCHOOL_TEACHER}>
             <SchoolTeacherPanel />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/checker"
+        element={
+          <ProtectedRoute requiredRole={USER_ROLES.CHECKER}>
+            <CheckerPanel />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/university"
+        element={
+          <ProtectedRoute requiredRole={USER_ROLES.UNIVERSITY}>
+            <UniversityDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/university-panel"
+        element={
+          <ProtectedRoute requiredRole={USER_ROLES.UNIVERSITY}>
+            <UniversityPanel />
           </ProtectedRoute>
         }
       />

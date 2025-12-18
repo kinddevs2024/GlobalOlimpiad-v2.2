@@ -12,6 +12,8 @@ export const USER_ROLES = {
   RESOLTER: "resolter", // Can edit and set results of essays and view all results
   SCHOOL_ADMIN: "school_admin", // School administrator
   SCHOOL_TEACHER: "school_teacher", // School teacher - can view results and real-time captures from their school
+  CHECKER: "checker", // Can verify and reject student portfolios
+  UNIVERSITY: "university", // University dashboard access for viewing student portfolios
 };
 
 export const OLYMPIAD_TYPES = {

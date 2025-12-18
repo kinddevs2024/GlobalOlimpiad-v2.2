@@ -83,6 +83,23 @@ const Navbar = () => {
                 </Link>
               ) : null}
 
+              {user?.role === USER_ROLES.CHECKER ? (
+                <Link to="/checker" className="navbar-link">
+                  Checker Panel
+                </Link>
+              ) : null}
+
+              {user?.role === USER_ROLES.UNIVERSITY ? (
+                <>
+                  <Link to="/university" className="navbar-link">
+                    University Dashboard
+                  </Link>
+                  <Link to="/university-panel" className="navbar-link">
+                    University Panel
+                  </Link>
+                </>
+              ) : null}
+
               <Link to="/results" className="navbar-link">
                 Results
               </Link>

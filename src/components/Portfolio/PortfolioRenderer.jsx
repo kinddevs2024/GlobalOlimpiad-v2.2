@@ -13,6 +13,7 @@ import EducationSection from "./sections/EducationSection";
 import CustomSection from "./sections/CustomSection";
 import EditableSectionWrapper from "../PortfolioEditor/EditableSectionWrapper";
 import DraggableSection from "../PortfolioEditor/DraggableSection";
+import PortfolioStatusBadge from "../PortfolioStatusBadge/PortfolioStatusBadge";
 import { usePortfolioEditor } from "../../hooks/usePortfolioEditor";
 import { useState } from "react";
 import "../../styles/portfolio.css";
@@ -275,8 +276,12 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
           <div className="portfolio-footer-content">
             <p className="portfolio-footer-text">
               This portfolio was created by{" "}
-              <a href="/" className="portfolio-footer-link">
+              <a href="/" className="portfolio-footer-link" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
                 GlobalOlimpiads
+                {/* Portfolio verification status badge */}
+                {displayPortfolio?.verificationStatus && (
+                  <PortfolioStatusBadge status={displayPortfolio.verificationStatus} size="small" />
+                )}
               </a>{" "}
               company
             </p>

@@ -5,6 +5,7 @@ import {
   adminAPI,
   resolterAPI,
   schoolTeacherAPI,
+  universityAPI,
 } from "../../services/api";
 import { formatDate } from "../../utils/helpers";
 import { useAuth } from "../../context/AuthContext";
@@ -33,12 +34,13 @@ const Results = () => {
     percentage: "",
   });
 
-  // Check if user is admin, owner, resolter, or school teacher (used throughout component)
+  // Check if user is admin, owner, resolter, school teacher, or university (used throughout component)
   const isAdminOrOwner =
     user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.OWNER;
   const isResolter = user?.role === USER_ROLES.RESOLTER;
   const isSchoolTeacher = user?.role === USER_ROLES.SCHOOL_TEACHER;
-  const canViewAllResults = isAdminOrOwner || isResolter || isSchoolTeacher;
+  const isUniversity = user?.role === USER_ROLES.UNIVERSITY;
+  const canViewAllResults = isAdminOrOwner || isResolter || isSchoolTeacher || isUniversity;
 
   useEffect(() => {
     if (!user) return; // Wait for user to be loaded
@@ -64,7 +66,7 @@ const Results = () => {
       let data;
 
       if (canViewAllResults) {
-        // For admins/owners/resolters/school teachers: fetch all results for this olympiad
+        // For admins/owners/resolters/school teachers/universities: fetch all results for this olympiad
         let submissionsResponse;
         if (isResolter) {
           // Use resolter API endpoint
@@ -72,6 +74,9 @@ const Results = () => {
         } else if (isSchoolTeacher) {
           // Use school teacher API endpoint (filtered by school)
           submissionsResponse = await schoolTeacherAPI.getSchoolResults(id);
+        } else if (isUniversity) {
+          // Use university API endpoint (filtered by university's olympiads)
+          submissionsResponse = await universityAPI.getOlympiadResults(id);
         } else {
           // Use admin API endpoint
           submissionsResponse = await adminAPI.getSubmissions(id, null);
@@ -262,7 +267,7 @@ const Results = () => {
       let submissions = [];
 
       if (canViewAllResults) {
-        // For admins/owners/resolters/school teachers: get all submissions from all olympiads
+        // For admins/owners/resolters/school teachers/universities: get all submissions from all olympiads
         let response;
         if (isResolter) {
           // Use resolter API endpoint
@@ -270,6 +275,9 @@ const Results = () => {
         } else if (isSchoolTeacher) {
           // Use school teacher API endpoint (filtered by school)
           response = await schoolTeacherAPI.getSchoolResults();
+        } else if (isUniversity) {
+          // Use university API endpoint (filtered by university's olympiads)
+          response = await universityAPI.getAllOlympiadResults();
         } else {
           // Use admin API endpoint
           response = await adminAPI.getSubmissions(null, null);

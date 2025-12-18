@@ -1,0 +1,15 @@
+/* Reuse verification modal styles */
+.unlock-info {
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  margin-top: 1rem;
+}
+
+.unlock-info p {
+  margin: 0;
+  line-height: 1.6;
+}
+
