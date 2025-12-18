@@ -11,6 +11,10 @@ import CertificatesSection from "./sections/CertificatesSection";
 import InterestsSection from "./sections/InterestsSection";
 import EducationSection from "./sections/EducationSection";
 import CustomSection from "./sections/CustomSection";
+import EditableSectionWrapper from "../PortfolioEditor/EditableSectionWrapper";
+import DraggableSection from "../PortfolioEditor/DraggableSection";
+import { usePortfolioEditor } from "../../hooks/usePortfolioEditor";
+import { useState } from "react";
 import "../../styles/portfolio.css";
 
 const SECTION_COMPONENTS = {
@@ -30,18 +34,72 @@ const SECTION_COMPONENTS = {
  * Converts portfolio JSON config to rendered UI
  * @param {Object} portfolio - Portfolio data object
  * @param {string} sectionId - Optional section ID/slug for multi-page layouts
+ * @param {boolean} isOwner - Whether the current user owns this portfolio
  */
-const PortfolioRenderer = ({ portfolio, sectionId = null }) => {
+const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => {
   const { layout, theme, hero, sections, animations } = portfolio || {};
+  const [draggedSectionId, setDraggedSectionId] = useState(null);
+  
+  // Get editor functions if in editor mode
+  let editorFunctions = null;
+  try {
+    editorFunctions = isOwner ? usePortfolioEditor() : null;
+  } catch (e) {
+    // Not in editor context, that's fine
+    editorFunctions = null;
+  }
+  
+  // Use editor portfolio if available, otherwise use passed portfolio
+  const displayPortfolio = editorFunctions?.portfolio || portfolio;
+
+  // Handle drag and drop
+  const handleDragStart = (sectionId, index) => {
+    setDraggedSectionId(sectionId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedSectionId(null);
+  };
+
+  const handleDrop = (draggedId, targetId, draggedIndex, targetIndex) => {
+    if (!editorFunctions || draggedId === targetId) return;
+
+    const currentSections = [...(displayPortfolio?.sections || [])];
+    const draggedSection = currentSections.find((s) => s.id === draggedId);
+    
+    if (!draggedSection) return;
+
+    // Remove dragged section
+    const filteredSections = currentSections.filter((s) => s.id !== draggedId);
+    
+    // Find target index
+    const targetSectionIndex = filteredSections.findIndex((s) => s.id === targetId);
+    const insertIndex = targetIndex < draggedIndex ? targetSectionIndex : targetSectionIndex + 1;
+    
+    // Insert at new position
+    filteredSections.splice(insertIndex, 0, draggedSection);
+    
+    // Update order
+    const reorderedSections = filteredSections.map((section, index) => ({
+      ...section,
+      order: index,
+    }));
+
+    // Update portfolio
+    editorFunctions.updatePortfolio({
+      sections: reorderedSections,
+    });
+  };
 
   // Sort sections by order and filter enabled ones
   const sortedSections = useMemo(() => {
-    if (!sections || !Array.isArray(sections)) return [];
+    const sectionsToUse = displayPortfolio?.sections || sections;
+    if (!sectionsToUse || !Array.isArray(sectionsToUse)) return [];
     
-    return sections
+    return sectionsToUse
       .filter((section) => section.enabled !== false)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [sections]);
+  }, [displayPortfolio?.sections, sections]);
 
   // Animation variants
   const sectionVariants = {
@@ -56,9 +114,7 @@ const PortfolioRenderer = ({ portfolio, sectionId = null }) => {
     },
   };
 
-  const containerClass = layout === "multi-page" 
-    ? "portfolio-multi-page" 
-    : "portfolio-single-page";
+  const containerClass = `${layout === "multi-page" ? "portfolio-multi-page" : "portfolio-single-page"} ${isOwner ? "portfolio-editor-mode" : ""}`;
 
   // Debug logging
   console.log("PortfolioRenderer - portfolio:", portfolio);
@@ -68,7 +124,8 @@ const PortfolioRenderer = ({ portfolio, sectionId = null }) => {
   console.log("PortfolioRenderer - sortedSections count:", sortedSections.length);
 
   // Check if we have any content to render
-  const hasHeroContent = hero && (hero.title || hero.subtitle || hero.image);
+  const displayHero = displayPortfolio?.hero || hero;
+  const hasHeroContent = displayHero && (displayHero.title || displayHero.subtitle || displayHero.image);
   const hasSections = sortedSections.length > 0;
 
   // For multi-page layouts, filter sections based on sectionId
@@ -114,23 +171,23 @@ const PortfolioRenderer = ({ portfolio, sectionId = null }) => {
   const shouldShowHero = layout === "multi-page" && sectionId ? false : hasHeroContent;
 
   return (
-    <PortfolioThemeProvider theme={theme}>
+    <PortfolioThemeProvider theme={displayPortfolio?.theme || theme}>
       {/* Portfolio container uses user's Settings theme for page background */}
       {/* Portfolio content sections use portfolio's own theme */}
       <div className={`portfolio-container ${containerClass}`}>
         {/* Render Header for multi-page layouts */}
-        {layout === "multi-page" && (
-          <PortfolioHeader portfolio={portfolio} hero={hero} />
+        {displayPortfolio?.layout === "multi-page" && (
+          <PortfolioHeader portfolio={displayPortfolio} hero={displayHero} />
         )}
 
         {/* Render Hero Section if exists and has content (only on home page for multi-page) */}
         {shouldShowHero && (
           <motion.div
-            initial={animations?.enabled ? "hidden" : false}
-            animate={animations?.enabled ? "visible" : false}
+            initial={displayPortfolio?.animations?.enabled ? "hidden" : false}
+            animate={displayPortfolio?.animations?.enabled ? "visible" : false}
             variants={sectionVariants}
           >
-            <HeroSection data={hero} />
+            <HeroSection data={displayHero} isOwner={isOwner} portfolio={displayPortfolio} />
           </motion.div>
         )}
 
@@ -144,21 +201,66 @@ const PortfolioRenderer = ({ portfolio, sectionId = null }) => {
               return null;
             }
 
+            const sectionElement = (
+              <SectionComponent
+                data={section.content || {}}
+                title={section.title}
+                style={section.style || {}}
+                isOwner={isOwner}
+                section={section}
+                portfolio={displayPortfolio}
+              />
+            );
+
+            // Wrap with editable wrapper and draggable if owner
+            if (isOwner && editorFunctions) {
+              return (
+                <motion.div
+                  key={section.id || index}
+                  initial={displayPortfolio?.animations?.enabled ? "hidden" : false}
+                  animate={displayPortfolio?.animations?.enabled ? "visible" : false}
+                  variants={sectionVariants}
+                  transition={{
+                    delay: displayPortfolio?.animations?.enabled ? index * 0.1 : 0,
+                  }}
+                >
+                  <DraggableSection
+                    section={section}
+                    index={index}
+                    isOwner={isOwner}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDrop={handleDrop}
+                  >
+                    <EditableSectionWrapper
+                      section={section}
+                      isOwner={isOwner}
+                      onUpdate={(updates) => editorFunctions.updateSection(section.id, updates)}
+                      onRemove={() => editorFunctions.removeSection(section.id)}
+                      onDuplicate={() => editorFunctions.duplicateSection(section.id)}
+                      onReorder={(newIndex) => {
+                        // Handled by drag and drop
+                      }}
+                    >
+                      {sectionElement}
+                    </EditableSectionWrapper>
+                  </DraggableSection>
+                </motion.div>
+              );
+            }
+
+            // Non-owner or no editor context - render normally
             return (
               <motion.div
                 key={section.id || index}
-                initial={animations?.enabled ? "hidden" : false}
-                animate={animations?.enabled ? "visible" : false}
+                initial={displayPortfolio?.animations?.enabled ? "hidden" : false}
+                animate={displayPortfolio?.animations?.enabled ? "visible" : false}
                 variants={sectionVariants}
                 transition={{
-                  delay: animations?.enabled ? index * 0.1 : 0,
+                  delay: displayPortfolio?.animations?.enabled ? index * 0.1 : 0,
                 }}
               >
-                <SectionComponent
-                  data={section.content || {}}
-                  title={section.title}
-                  style={section.style || {}}
-                />
+                {sectionElement}
               </motion.div>
             );
           })

@@ -160,3 +160,23 @@
   }
 }
 
+/* Editor Mode Styles */
+.portfolio-view-container {
+  position: relative;
+  min-height: 100vh;
+}
+
+.portfolio-view-container.editor-open .portfolio-content-wrapper {
+  margin-right: 320px;
+}
+
+.portfolio-content-wrapper {
+  transition: margin 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .portfolio-view-container.editor-open .portfolio-content-wrapper {
+    margin-right: 0;
+  }
+}
+

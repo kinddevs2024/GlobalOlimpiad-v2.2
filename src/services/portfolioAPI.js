@@ -68,5 +68,22 @@ export const portfolioAPI = {
   // Track portfolio view (analytics)
   trackView: (portfolioId, viewerType) =>
     api.post("/analytics/view", { portfolioId, viewerType }),
+
+  // Verification endpoints
+  // Submit item for verification
+  submitItemForVerification: (portfolioId, sectionId, itemId, itemType) =>
+    api.post(`/portfolio/${portfolioId}/verify/item`, {
+      sectionId,
+      itemId,
+      itemType,
+    }),
+
+  // Submit section for verification
+  submitSectionForVerification: (portfolioId, sectionId) =>
+    api.post(`/portfolio/${portfolioId}/verify/section`, { sectionId }),
+
+  // Get verification status
+  getVerificationStatus: (portfolioId) =>
+    api.get(`/portfolio/${portfolioId}/verification`),
 };
 

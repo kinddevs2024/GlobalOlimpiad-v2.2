@@ -4,6 +4,10 @@ import PortfolioRenderer from "../../components/Portfolio/PortfolioRenderer";
 import { portfolioAPI } from "../../services/portfolioAPI";
 import { usePortfolioAnalytics } from "../../hooks/usePortfolioAnalytics";
 import { normalizeTheme, DEFAULT_THEME } from "../../utils/portfolioThemes";
+import { useAuth } from "../../context/AuthContext";
+import { PortfolioEditorProvider } from "../../context/PortfolioEditorContext";
+import { VerificationProvider } from "../../context/VerificationContext";
+import EditorSidePanel from "../../components/PortfolioEditor/EditorSidePanel";
 import "./PortfolioView.css";
 
 // Normalize portfolio structure from backend format to frontend format
@@ -140,9 +144,14 @@ const normalizePortfolioFromBackend = (backendPortfolio) => {
 
 const PortfolioView = () => {
   const { slug, sectionId } = useParams();
+  const { user } = useAuth();
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+
+  // Check if current user is the portfolio owner
+  const isOwner = user && portfolio && user._id === portfolio.studentId;
   
   // Apply portfolio's theme to body when portfolio loads
   // Portfolio theme is different from user's Settings theme
@@ -272,9 +281,32 @@ const PortfolioView = () => {
   }
 
   // Backend handles privacy - if we get here, portfolio is accessible
-  // Just render whatever backend returned
   console.log("RENDERING PORTFOLIO - About to render PortfolioRenderer");
-  return <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} />;
+  console.log("Is Owner:", isOwner);
+
+  // Wrap with verification provider for all viewers
+  const portfolioContent = (
+    <VerificationProvider portfolio={portfolio}>
+      {isOwner ? (
+        <PortfolioEditorProvider portfolio={portfolio} isOwner={isOwner}>
+          <div className={`portfolio-view-container ${isEditorOpen ? "editor-open" : ""}`}>
+            <EditorSidePanel
+              isOpen={isEditorOpen}
+              onToggle={() => setIsEditorOpen(!isEditorOpen)}
+              position="right"
+            />
+            <div className="portfolio-content-wrapper">
+              <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} isOwner={isOwner} />
+            </div>
+          </div>
+        </PortfolioEditorProvider>
+      ) : (
+        <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} isOwner={false} />
+      )}
+    </VerificationProvider>
+  );
+
+  return portfolioContent;
 };
 
 export default PortfolioView;

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "../../context/TranslationContext";
+import VerificationBadge from "../PortfolioVerification/VerificationBadge";
+import { useVerification } from "../../hooks/useVerification";
 import "../../styles/portfolio.css";
 
 /**
@@ -15,6 +17,15 @@ const PortfolioHeader = ({ portfolio, hero }) => {
   const { sections = [], layout, theme } = portfolio || {};
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { targetLanguage, changeLanguage, availableLanguages } = useTranslation();
+  
+  // Get verification status
+  let verificationStatus = null;
+  try {
+    const { verificationStatuses } = useVerification();
+    verificationStatus = verificationStatuses?.portfolio?.status || null;
+  } catch (e) {
+    // Verification context not available, that's fine
+  }
 
   // Get portfolio theme colors (RGB values are set by applyTheme in ThemeProvider)
   const portfolioAccent = theme?.colors?.accent || "#0066ff";
@@ -186,17 +197,25 @@ const PortfolioHeader = ({ portfolio, hero }) => {
     <header className="portfolio-header">
       <div className="portfolio-header-container">
         {/* Logo/Home Link */}
-        <Link to={homeLink} className="portfolio-header-logo">
-          {portfolioLogo ? (
-            <img
-              src={portfolioLogo}
-              alt={hero?.title || "Portfolio"}
-              className="portfolio-header-logo-image"
-            />
-          ) : (
-            <span>{hero?.title || "Portfolio"}</span>
-          )}
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <Link to={homeLink} className="portfolio-header-logo">
+            {portfolioLogo ? (
+              <img
+                src={portfolioLogo}
+                alt={hero?.title || "Portfolio"}
+                className="portfolio-header-logo-image"
+              />
+            ) : (
+              <span>{hero?.title || "Portfolio"}</span>
+            )}
+          </Link>
+          {/* Portfolio-level verification badge - always show */}
+          <VerificationBadge
+            status={verificationStatus || "unverified"}
+            level="portfolio"
+            showTooltip={true}
+          />
+        </div>
 
         {/* Desktop Navigation Menu */}
         <nav className="portfolio-header-nav desktop-nav">
