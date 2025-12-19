@@ -253,29 +253,35 @@ const PortfolioView = () => {
 
   if (loading) {
     return (
-      <div className="portfolio-view-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading portfolio...</p>
+      <div className="portfolio-page-container">
+        <div className="portfolio-view-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading portfolio...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="portfolio-view-error">
-        <div className="error-icon">⚠️</div>
-        <h2>Portfolio Not Found</h2>
-        <p>{error}</p>
+      <div className="portfolio-page-container">
+        <div className="portfolio-view-error">
+          <div className="error-icon">⚠️</div>
+          <h2>Portfolio Not Found</h2>
+          <p>{error}</p>
+        </div>
       </div>
     );
   }
 
   if (!portfolio) {
     return (
-      <div className="portfolio-view-error">
-        <div className="error-icon">📭</div>
-        <h2>Portfolio Not Found</h2>
-        <p>This portfolio does not exist.</p>
+      <div className="portfolio-page-container">
+        <div className="portfolio-view-error">
+          <div className="error-icon">📭</div>
+          <h2>Portfolio Not Found</h2>
+          <p>This portfolio does not exist.</p>
+        </div>
       </div>
     );
   }
@@ -286,24 +292,26 @@ const PortfolioView = () => {
 
   // Wrap with verification provider for all viewers
   const portfolioContent = (
-    <VerificationProvider portfolio={portfolio}>
-      {isOwner ? (
-        <PortfolioEditorProvider portfolio={portfolio} isOwner={isOwner}>
-          <div className={`portfolio-view-container ${isEditorOpen ? "editor-open" : ""}`}>
-            <EditorSidePanel
-              isOpen={isEditorOpen}
-              onToggle={() => setIsEditorOpen(!isEditorOpen)}
-              position="right"
-            />
-            <div className="portfolio-content-wrapper">
-              <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} isOwner={isOwner} />
+    <div className="portfolio-page-container">
+      <VerificationProvider portfolio={portfolio}>
+        {isOwner ? (
+          <PortfolioEditorProvider portfolio={portfolio} isOwner={isOwner}>
+            <div className={`portfolio-view-container ${isEditorOpen ? "editor-open" : ""}`}>
+              <EditorSidePanel
+                isOpen={isEditorOpen}
+                onToggle={() => setIsEditorOpen(!isEditorOpen)}
+                position="right"
+              />
+              <div className="portfolio-content-wrapper">
+                <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} isOwner={isOwner} />
+              </div>
             </div>
-          </div>
-        </PortfolioEditorProvider>
-      ) : (
-        <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} isOwner={false} />
-      )}
-    </VerificationProvider>
+          </PortfolioEditorProvider>
+        ) : (
+          <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} isOwner={false} />
+        )}
+      </VerificationProvider>
+    </div>
   );
 
   return portfolioContent;

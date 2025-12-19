@@ -1,3 +1,10 @@
+/* Portfolio Page Container */
+.portfolio-page-container {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
 .portfolio-view-loading,
 .portfolio-view-error {
   min-height: 100vh;

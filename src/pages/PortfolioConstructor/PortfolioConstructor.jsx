@@ -654,48 +654,55 @@ const PortfolioConstructor = () => {
 
   if (loading) {
     return (
-      <div className="portfolio-constructor-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading portfolio editor...</p>
+      <div className="portfolio-constructor-page-container">
+        <div className="portfolio-constructor-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading portfolio editor...</p>
+        </div>
       </div>
     );
   }
 
   if (!portfolio) {
-    return <div>Error loading portfolio</div>;
+    return (
+      <div className="portfolio-constructor-page-container">
+        <div>Error loading portfolio</div>
+      </div>
+    );
   }
 
   return (
-    <div className="portfolio-constructor">
-      <div className="constructor-header">
-        <h1>Portfolio Constructor</h1>
-        <div className="constructor-actions">
-          <button
-            className="button-secondary"
-            onClick={() => navigate(`/portfolio/${portfolio.slug}`)}
-          >
-            View Portfolio
-          </button>
-          <button
-            className="button-primary"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Save Portfolio"}
-          </button>
+    <div className="portfolio-constructor-page-container">
+      <div className="portfolio-constructor">
+        <div className="constructor-header">
+          <h1>Portfolio Constructor</h1>
+          <div className="constructor-actions">
+            <button
+              className="button-secondary"
+              onClick={() => navigate(`/portfolio/${portfolio.slug}`)}
+            >
+              View Portfolio
+            </button>
+            <button
+              className="button-primary"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save Portfolio"}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Unsaved changes warning */}
-      {hasUnsavedChanges && (
-        <div className="unsaved-changes-warning">
-          <span>
-            ⚠️ You have unsaved changes. Don't forget to save your portfolio!
-          </span>
-        </div>
-      )}
+        {/* Unsaved changes warning */}
+        {hasUnsavedChanges && (
+          <div className="unsaved-changes-warning">
+            <span>
+              ⚠️ You have unsaved changes. Don't forget to save your portfolio!
+            </span>
+          </div>
+        )}
 
-      <div className="constructor-content">
+        <div className="constructor-content">
         <div className="constructor-sidebar">
           <div className="constructor-tabs">
             <button
@@ -887,6 +894,7 @@ const PortfolioConstructor = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
