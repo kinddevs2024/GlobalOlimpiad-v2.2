@@ -92,12 +92,6 @@ const Profile = () => {
                         : "Not set"}
                     </span>
                   </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Phone Number</span>
-                    <span className="detail-value">
-                      {user.tel || "Not set"}
-                    </span>
-                  </div>
                   <div className="detail-item full-width">
                     <span className="detail-label">Address</span>
                     <span className="detail-value">
@@ -128,20 +122,26 @@ const Profile = () => {
               )}
 
               <div className="profile-section">
-                <h3 className="section-title">Account Information</h3>
+                <h3 className="section-title">Contact Information</h3>
                 <div className="detail-grid">
                   <div className="detail-item">
-                    <span className="detail-label">Email</span>
+                    <span className="detail-label">Phone Number</span>
+                    <span className="detail-value">
+                      {user.tel || "Not set"}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Gmail</span>
                     <span className="detail-value">
                       {user.email || "Not set"}
                     </span>
                   </div>
-                  {user.gmail && (
-                    <div className="detail-item">
-                      <span className="detail-label">Gmail</span>
-                      <span className="detail-value">{user.gmail}</span>
-                    </div>
-                  )}
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <h3 className="section-title">Account Information</h3>
+                <div className="detail-grid">
                   <div className="detail-item">
                     <span className="detail-label">Role</span>
                     <span className="detail-value">

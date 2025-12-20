@@ -37,6 +37,7 @@ import PortfolioConstructor from "./pages/PortfolioConstructor";
 import { USER_ROLES, GOOGLE_CLIENT_ID } from "./utils/constants";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TranslationProvider } from "./context/TranslationContext";
+import CookieConsentModal from "./components/CookieConsentModal/CookieConsentModal";
 import "./styles/globals.css";
 import "./styles/animations.css";
 
@@ -45,10 +46,10 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Home />}
-      />
+        <Route
+          path="/"
+          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Home />}
+        />
 
       <Route
         path="/auth"
@@ -258,6 +259,7 @@ function App() {
             <SocketProvider>
               <Router>
                 <ScrollToTop />
+                <CookieConsentWrapper />
                 <div className="app">
                   <Navbar />
                   <main className="main-content">
@@ -272,5 +274,19 @@ function App() {
     </GoogleOAuthProvider>
   );
 }
+
+// Separate component to handle cookie consent modal
+const CookieConsentWrapper = () => {
+  const { showCookieConsent, handleCookieConsent } = useAuth();
+
+  if (!showCookieConsent) return null;
+
+  return (
+    <CookieConsentModal
+      onAccept={handleCookieConsent}
+      onReject={() => handleCookieConsent(false)}
+    />
+  );
+};
 
 export default App;

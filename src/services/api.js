@@ -54,7 +54,7 @@ export const authAPI = {
     return api.post("/auth/register", data);
   },
   login: (data) => api.post("/auth/login", data),
-  loginWithGoogle: (token) => api.post("/auth/google", { token }),
+  loginWithGoogle: (data) => api.post("/auth/google", data),
   getMe: () => api.get("/auth/me"),
   updateProfile: (data) => {
     // Interceptor will handle FormData Content-Type automatically
@@ -68,6 +68,9 @@ export const authAPI = {
         "Content-Type": "multipart/form-data",
       },
     });
+  },
+  updateCookieConsent: (data) => {
+    return api.post("/auth/cookie-consent", data);
   },
 };
 

@@ -26,6 +26,7 @@ const Results = () => {
   const [allResults, setAllResults] = useState([]); // For admin/owner: all results for an olympiad
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasPendingSubmission, setHasPendingSubmission] = useState(false);
   const [notification, setNotification] = useState(null);
   const [editingResult, setEditingResult] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -40,7 +41,8 @@ const Results = () => {
   const isResolter = user?.role === USER_ROLES.RESOLTER;
   const isSchoolTeacher = user?.role === USER_ROLES.SCHOOL_TEACHER;
   const isUniversity = user?.role === USER_ROLES.UNIVERSITY;
-  const canViewAllResults = isAdminOrOwner || isResolter || isSchoolTeacher || isUniversity;
+  const canViewAllResults =
+    isAdminOrOwner || isResolter || isSchoolTeacher || isUniversity;
 
   useEffect(() => {
     if (!user) return; // Wait for user to be loaded
@@ -113,7 +115,22 @@ const Results = () => {
         // 2. Results with status 'checked' AND visible === true (anyone can see)
         // 3. Results with visible === true (if not checked, only visible to admins/resolters)
         let visibleSubmissions = submissions;
+        let userHasPendingSubmission = false;
         if (!canViewAllResults) {
+          // Check if user has a submission that isn't checked yet
+          const userSubmission = submissions.find((submission) => {
+            const submissionUserId = submission.userId || submission.user?._id;
+            return (
+              user?._id &&
+              (submissionUserId === user._id ||
+                submissionUserId === user._id.toString())
+            );
+          });
+
+          if (userSubmission && userSubmission.status !== "checked") {
+            userHasPendingSubmission = true;
+          }
+
           visibleSubmissions = submissions.filter((submission) => {
             const isOwnResult =
               submission.userId === user?._id ||
@@ -125,6 +142,8 @@ const Results = () => {
             return isOwnResult || isCheckedAndVisible || isVisible;
           });
         }
+
+        setHasPendingSubmission(userHasPendingSubmission);
 
         // Transform submissions to results format - with try-catch protection
         let allResults = [];
@@ -196,6 +215,39 @@ const Results = () => {
         }
         const response = await olympiadAPI.getResults(id, user._id);
         data = response.data;
+
+        // Check if user has a submission but results aren't ready
+        if (!data.success || !data.userResult) {
+          // Try to check if there's a submission that isn't checked yet
+          try {
+            const submissionsResponse = await adminAPI.getSubmissions(id, null);
+            const submissionsData = submissionsResponse?.data;
+            let submissions = [];
+            if (Array.isArray(submissionsData)) {
+              submissions = submissionsData;
+            } else if (submissionsData && typeof submissionsData === "object") {
+              submissions =
+                submissionsData.submissions || submissionsData.data || [];
+            }
+
+            const userSubmission = submissions.find((submission) => {
+              const submissionUserId =
+                submission.userId || submission.user?._id;
+              return (
+                user?._id &&
+                (submissionUserId === user._id ||
+                  submissionUserId === user._id.toString())
+              );
+            });
+
+            if (userSubmission && userSubmission.status !== "checked") {
+              setHasPendingSubmission(true);
+            }
+          } catch (err) {
+            // If we can't check submissions, just continue
+            console.log("Could not check for pending submissions:", err);
+          }
+        }
       }
 
       // New API structure
@@ -207,6 +259,10 @@ const Results = () => {
         setOlympiadType(data.olympiadType || "");
         if (data.allResults) {
           setAllResults(data.allResults);
+        }
+        // Reset pending submission state if we have results
+        if (data.userResult) {
+          setHasPendingSubmission(false);
         }
       } else {
         // Fallback to old structure if needed
@@ -253,7 +309,59 @@ const Results = () => {
       }
     } catch (error) {
       console.error("Error fetching results:", error);
-      setError(error.response?.data?.message || "Failed to fetch results");
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to fetch results";
+
+      // Check if error message indicates results are being processed
+      const lowerErrorMessage = errorMessage.toLowerCase();
+      if (
+        lowerErrorMessage.includes("working on") ||
+        lowerErrorMessage.includes("processing") ||
+        lowerErrorMessage.includes("coming") ||
+        lowerErrorMessage.includes("we are working")
+      ) {
+        setHasPendingSubmission(true);
+        setError(null); // Don't show as error, show as pending
+      } else {
+        // Try to check if user has a pending submission
+        if (id && !canViewAllResults && user?._id) {
+          try {
+            const submissionsResponse = await adminAPI.getSubmissions(id, null);
+            const submissionsData = submissionsResponse?.data;
+            let submissions = [];
+            if (Array.isArray(submissionsData)) {
+              submissions = submissionsData;
+            } else if (submissionsData && typeof submissionsData === "object") {
+              submissions =
+                submissionsData.submissions || submissionsData.data || [];
+            }
+
+            const userSubmission = submissions.find((submission) => {
+              const submissionUserId =
+                submission.userId || submission.user?._id;
+              return (
+                user?._id &&
+                (submissionUserId === user._id ||
+                  submissionUserId === user._id.toString())
+              );
+            });
+
+            if (userSubmission && userSubmission.status !== "checked") {
+              setHasPendingSubmission(true);
+              setError(null); // Don't show as error
+            } else {
+              setError(errorMessage);
+            }
+          } catch (checkError) {
+            // If we can't check, just show the error
+            setError(errorMessage);
+          }
+        } else {
+          setError(errorMessage);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -457,16 +565,39 @@ const Results = () => {
     );
   }
 
-  if (error) {
+  if (error && !hasPendingSubmission) {
+    // Check if error message indicates results are being processed
+    const isPendingMessage =
+      error.toLowerCase().includes("working on") ||
+      error.toLowerCase().includes("processing") ||
+      error.toLowerCase().includes("coming");
+
     return (
       <div className="results-page">
         <div className="container">
           <div className="no-results card">
-            <h2>Error</h2>
-            <p>{error}</p>
-            <Link to="/dashboard" className="button-primary">
-              Go to Dashboard
-            </Link>
+            {isPendingMessage ? (
+              <>
+                <h1 className="pending-results-title">
+                  Your Results Are Being Checked
+                </h1>
+                <p className="pending-results-message">Please wait.</p>
+                <Link to="/dashboard" className="button-primary">
+                  Go to Dashboard
+                </Link>
+                <p className="pending-results-footer">
+                  We will notify you once your results are ready.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2>Error</h2>
+                <p>{error}</p>
+                <Link to="/dashboard" className="button-primary">
+                  Go to Dashboard
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -585,11 +716,28 @@ const Results = () => {
       <div className="results-page">
         <div className="container">
           <div className="no-results card">
-            <h2>No Results Found</h2>
-            <p>You haven't completed this olympiad yet.</p>
-            <Link to="/dashboard" className="button-primary">
-              Go to Dashboard
-            </Link>
+            {hasPendingSubmission ? (
+              <>
+                <h1 className="pending-results-title">
+                  Your Results Are Being Checked
+                </h1>
+                <p className="pending-results-message">Please wait.</p>
+                <Link to="/dashboard" className="button-primary">
+                  Go to Dashboard
+                </Link>
+                <p className="pending-results-footer">
+                  We will notify you once your results are ready.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2>No Results Found</h2>
+                <p>You haven't completed this olympiad yet.</p>
+                <Link to="/dashboard" className="button-primary">
+                  Go to Dashboard
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -94,6 +94,7 @@ const Auth = () => {
           name: fullName,
           firstName: formData.firstName || "",
           secondName: formData.secondName || "",
+          phone: null,
         };
 
         result = await register(registerData);

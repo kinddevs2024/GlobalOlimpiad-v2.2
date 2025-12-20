@@ -32,33 +32,59 @@
 .dashboard-filters {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 40px;
   flex-wrap: wrap;
 }
 
 .filter-button {
-  padding: 10px 24px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--accent);
   color: var(--text-primary);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.filter-button:hover::before {
+  left: 0;
 }
 
 .filter-button:hover {
-  border-color: var(--border-hover);
+  color: var(--bg-primary);
+  box-shadow: 0 0 20px var(--glow);
   transform: translateY(-2px);
 }
 
+.filter-button:active {
+  transform: translateY(0);
+}
+
 .filter-button.active {
-  background: var(--accent);
   color: var(--bg-primary);
   border-color: var(--accent);
   box-shadow: 0 0 20px var(--glow);
+}
+
+.filter-button.active::before {
+  left: 0;
 }
 
 .olympiads-grid {
@@ -261,20 +287,10 @@
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  font-size: 24px;
-  margin-bottom: 12px;
-  color: var(--text-primary);
-}
-
-.empty-state p {
-  font-size: 16px;
-  color: var(--text-secondary);
+  display: inline-block;
+  padding: "0.75rem 1.5rem";
+  text-decoration: none;
+  border-radius: 8px;
 }
 
 /* Olympiad sections for student view */
@@ -308,11 +324,11 @@
   .dashboard-title {
     font-size: 36px;
   }
-  
+
   .olympiads-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .olympiad-card-header {
     flex-direction: column;
   }
@@ -352,6 +368,7 @@
     transform: translateY(50px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -578,4 +595,3 @@
     width: 100%;
   }
 }
-

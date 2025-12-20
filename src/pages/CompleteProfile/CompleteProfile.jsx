@@ -14,6 +14,7 @@ const CompleteProfile = () => {
   const [formData, setFormData] = useState({
     name: "",
     tel: "",
+    phone: null,
     address: "",
     schoolName: "",
     schoolId: "",
@@ -55,6 +56,7 @@ const CompleteProfile = () => {
           `${user.firstName || ""} ${user.secondName || ""}`.trim() ||
           "",
         tel: user.tel || "",
+        phone: user.phone || null,
         address: user.address || "",
         schoolName: user.schoolName || "",
         schoolId: user.schoolId || "",
@@ -119,6 +121,7 @@ const CompleteProfile = () => {
           firstName: formData.firstName || "",
           secondName: formData.secondName || "",
           tel: formData.tel || "",
+          phone: formData.phone || null,
           address: formData.address || "",
           gender: formData.gender || "",
           dateBorn: formData.dateBorn
@@ -146,7 +149,9 @@ const CompleteProfile = () => {
         updateData.append("firstName", formData.firstName || "");
         updateData.append("secondName", formData.secondName || "");
         updateData.append("tel", formData.tel || "");
+        updateData.append("phone", formData.phone || null);
         updateData.append("address", formData.address || "");
+        
 
         // Date of birth - convert to ISO string if present
         if (formData.dateBorn) {
@@ -180,10 +185,24 @@ const CompleteProfile = () => {
         }
         response = await authAPI.updateProfile(updateData);
       }
-      const updatedUser = response.data.user || response.data;
-
-      // Update user in context
-      setUser(updatedUser);
+      // Fetch updated user data with devices from /me endpoint
+      try {
+        const meResponse = await authAPI.getMe();
+        const userData = meResponse.data;
+        // Ensure devices array exists
+        if (!userData.devices) {
+          userData.devices = user.devices || [];
+        }
+        setUser(userData);
+      } catch (meError) {
+        console.error("Error fetching user data after profile completion:", meError);
+        // Fallback to response data
+        const updatedUser = response.data.user || response.data;
+        if (!updatedUser.devices) {
+          updatedUser.devices = user.devices || [];
+        }
+        setUser(updatedUser);
+      }
 
       setNotification({
         message: "Profile completed successfully!",

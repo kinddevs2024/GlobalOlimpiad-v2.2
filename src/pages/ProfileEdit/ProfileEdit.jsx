@@ -18,6 +18,7 @@ const ProfileEdit = () => {
     email: "",
     gmail: "",
     tel: "",
+    phone: null,
     address: "",
     schoolName: "",
     schoolId: "",
@@ -57,6 +58,7 @@ const ProfileEdit = () => {
         email: user.email || "",
         gmail: user.gmail || "",
         tel: user.tel || "",
+        phone: user.phone || null,
         address: user.address || "",
         schoolName: user.schoolName || "",
         schoolId: user.schoolId || "",
@@ -154,6 +156,7 @@ const ProfileEdit = () => {
       // The backend should handle empty strings vs null
       updateData.append("gmail", formData.gmail || "");
       updateData.append("tel", formData.tel || "");
+      updateData.append("phone", formData.phone || null);
       updateData.append("address", formData.address || "");
 
       // Date of birth - convert to ISO string if present
@@ -187,6 +190,7 @@ const ProfileEdit = () => {
       console.log("email:", formData.email);
       console.log("gmail:", formData.gmail);
       console.log("tel:", formData.tel);
+      console.log("phone:", formData.phone);
       console.log("address:", formData.address);
       console.log("dateBorn:", formData.dateBorn);
       console.log("gender:", formData.gender);
@@ -212,6 +216,7 @@ const ProfileEdit = () => {
           secondName: formData.secondName || "",
           gmail: formData.gmail || "",
           tel: formData.tel || "",
+          phone: formData.phone || null,
           address: formData.address || "",
           gender: formData.gender || "",
           dateBorn: formData.dateBorn
@@ -237,10 +242,28 @@ const ProfileEdit = () => {
       }
 
       console.log("Profile update response:", response.data);
-      const updatedUser = response.data.user || response.data;
 
-      // Update user in context
-      setUser(updatedUser);
+      // Fetch updated user data with devices from /me endpoint
+      try {
+        const meResponse = await authAPI.getMe();
+        const userData = meResponse.data;
+        // Ensure devices array exists
+        if (!userData.devices) {
+          userData.devices = user.devices || [];
+        }
+        setUser(userData);
+      } catch (meError) {
+        console.error(
+          "Error fetching user data after profile update:",
+          meError
+        );
+        // Fallback to response data
+        const updatedUser = response.data.user || response.data;
+        if (!updatedUser.devices) {
+          updatedUser.devices = user.devices || [];
+        }
+        setUser(updatedUser);
+      }
 
       setNotification({
         message: "Profile updated successfully!",
@@ -394,17 +417,6 @@ const ProfileEdit = () => {
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="tel">Phone Number</label>
-              <input
-                type="tel"
-                id="tel"
-                name="tel"
-                value={formData.tel}
-                onChange={handleChange}
-                placeholder="Enter your phone number"
-              />
-            </div>
-            <div className="form-group">
               <label htmlFor="address">Address</label>
               <textarea
                 id="address"
@@ -450,7 +462,18 @@ const ProfileEdit = () => {
           <div className="form-section">
             <h3 className="section-title">Contact Information</h3>
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="tel">Phone Number</label>
+              <input
+                type="tel"
+                id="tel"
+                name="tel"
+                value={formData.tel}
+                onChange={handleChange}
+                placeholder="Enter your phone number"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="email">Gmail</label>
               <input
                 type="email"
                 id="email"
@@ -459,17 +482,6 @@ const ProfileEdit = () => {
                 onChange={handleChange}
                 required
                 placeholder="Enter your email"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="gmail">Gmail</label>
-              <input
-                type="email"
-                id="gmail"
-                name="gmail"
-                value={formData.gmail}
-                onChange={handleChange}
-                placeholder="Enter your Gmail address"
               />
             </div>
           </div>

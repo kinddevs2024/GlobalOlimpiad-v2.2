@@ -101,6 +101,42 @@
   margin-bottom: 24px;
 }
 
+.pending-results-title {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  letter-spacing: -1px;
+}
+
+.pending-results-message {
+  font-size: 24px;
+  color: var(--text-secondary);
+  margin-bottom: 40px;
+  font-weight: 500;
+}
+
+.pending-results-footer {
+  font-size: 16px;
+  color: var(--text-tertiary);
+  margin-top: 32px;
+  margin-bottom: 0;
+  font-style: italic;
+}
+
+.no-results .button-primary {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 12px 24px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-block;
+}
+
 .results-actions {
   display: flex;
   justify-content: center;
@@ -709,7 +745,7 @@
   .results-title {
     font-size: 36px;
   }
-  
+
   .results-summary {
     grid-template-columns: 1fr;
   }
@@ -755,10 +791,9 @@
     gap: 12px;
     padding: 16px;
   }
-  
+
   .all-results-table .email-cell,
   .all-results-table .time-cell {
     display: none;
   }
 }
-

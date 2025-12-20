@@ -48,7 +48,7 @@
 }
 
 .dashboard-filters .filter-button {
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.5rem;
   border: 2px solid var(--border);
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -62,6 +62,7 @@
 .dashboard-filters .filter-button:hover {
   border-color: var(--accent);
   background: rgba(255, 255, 255, 0.05);
+  color: white;
 }
 
 .dashboard-filters .filter-button.active {
