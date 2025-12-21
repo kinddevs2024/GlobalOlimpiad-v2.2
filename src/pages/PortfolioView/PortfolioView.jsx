@@ -31,9 +31,10 @@ const normalizePortfolioFromBackend = (backendPortfolio) => {
         headingSize: backendTheme.styles?.headingSize || "2.5rem",
         bodySize: backendTheme.styles?.bodySize || "1rem",
       },
-      spacing: backendTheme.styles?.spacing || "normal",
+      spacing: backendTheme.styles?.spacing || backendTheme.spacing || "normal",
+      containerWidth: backendTheme.containerWidth || "medium",
     };
-    // Normalize using our theme normalizer
+    // Normalize using our theme normalizer (preserves containerWidth)
     normalized.theme = normalizeTheme(normalized.theme);
   } else {
     normalized.theme = normalizeTheme(DEFAULT_THEME);
@@ -170,10 +171,7 @@ const PortfolioView = () => {
     };
   }, [portfolio]);
 
-  // Debug: Log slug to verify route is working
-  useEffect(() => {
-    console.log("PortfolioView mounted with slug:", slug);
-  }, [slug]);
+  // Debug logging removed
 
   useEffect(() => {
     const fetchPortfolio = async () => {
@@ -182,35 +180,26 @@ const PortfolioView = () => {
         setError(null);
         const response = await portfolioAPI.getPortfolioBySlug(slug);
         
-        console.log("Full API response:", response);
-        console.log("Response.data:", response?.data);
-        
         // Handle nested response structure: { success: true, data: {...} }
         let portfolioData = null;
         if (response && response.data) {
           // Check for nested structure first: { success: true, data: {...} }
           if (response.data.success !== undefined && response.data.data) {
-            console.log("Found nested structure with success flag");
             portfolioData = response.data.data;
           } 
           // Check if response.data itself is the portfolio (has _id or slug)
           else if (response.data._id || response.data.slug) {
-            console.log("Found direct portfolio object");
             portfolioData = response.data;
           }
           // If response.data has a data property, try that
           else if (response.data.data) {
-            console.log("Found data property in response.data");
             portfolioData = response.data.data;
           }
         }
-        
-        console.log("Extracted portfolioData:", portfolioData);
 
         if (portfolioData) {
           // Normalize portfolio structure from backend format to frontend format
           const normalizedPortfolio = normalizePortfolioFromBackend(portfolioData);
-          console.log("Final normalized portfolio data:", normalizedPortfolio);
           setPortfolio(normalizedPortfolio);
         } else {
           setError("Portfolio not found.");
@@ -287,8 +276,6 @@ const PortfolioView = () => {
   }
 
   // Backend handles privacy - if we get here, portfolio is accessible
-  console.log("RENDERING PORTFOLIO - About to render PortfolioRenderer");
-  console.log("Is Owner:", isOwner);
 
   // Wrap with verification provider for all viewers
   const portfolioContent = (

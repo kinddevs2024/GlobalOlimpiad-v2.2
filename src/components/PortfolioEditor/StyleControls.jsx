@@ -45,6 +45,17 @@ const StyleControls = () => {
     });
   };
 
+  const handleContainerWidthChange = (value) => {
+    updatePortfolio({
+      theme: {
+        ...theme,
+        containerWidth: value,
+      },
+    });
+  };
+
+  const containerWidth = theme.containerWidth || "medium";
+
   return (
     <div className="portfolio-style-controls">
       <div className="style-control-group">
@@ -126,8 +137,21 @@ const StyleControls = () => {
         >
           <option value="compact">Compact</option>
           <option value="normal">Normal</option>
-          <option value="relaxed">Relaxed</option>
-          <option value="loose">Loose</option>
+          <option value="spacious">Spacious</option>
+        </select>
+      </div>
+
+      <div className="style-control-group">
+        <label className="style-control-label">Container Width</label>
+        <select
+          value={containerWidth}
+          onChange={(e) => handleContainerWidthChange(e.target.value)}
+          className="style-control-select"
+        >
+          <option value="narrow">Narrow (800px)</option>
+          <option value="medium">Medium (1200px)</option>
+          <option value="wide">Wide (1600px)</option>
+          <option value="full">Full Width</option>
         </select>
       </div>
     </div>

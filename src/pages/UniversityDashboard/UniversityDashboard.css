@@ -134,5 +134,61 @@
   border-top: 1px solid var(--border);
 }
 
+.view-mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.view-mode-button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+}
+
+.view-mode-button:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.view-mode-button.active {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.filter-input {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 14px;
+  width: 100%;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.filter-input::placeholder {
+  color: var(--text-tertiary);
+}
+
 /* Import AdminPanel styles for form components - styles are global */
 

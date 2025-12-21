@@ -128,7 +128,7 @@ const PortfolioConstructor = () => {
         frontendPortfolio.isPublic === true,
     };
 
-    // Convert theme: frontend { colors, typography, spacing } -> backend { colors, fonts, styles }
+    // Convert theme: frontend { colors, typography, spacing, containerWidth } -> backend { colors, fonts, styles }
     if (frontendPortfolio.theme) {
       backendFormat.theme = {
         name: frontendPortfolio.theme.name,
@@ -148,6 +148,8 @@ const PortfolioConstructor = () => {
             frontendPortfolio.theme.typography?.fontFamily ||
             "Inter, system-ui, sans-serif",
         },
+        // Preserve containerWidth in theme if it exists
+        containerWidth: frontendPortfolio.theme.containerWidth || "medium",
         styles: {
           spacing: frontendPortfolio.theme.spacing || "normal",
           headingSize:
@@ -317,9 +319,10 @@ const PortfolioConstructor = () => {
           headingSize: backendTheme.styles?.headingSize || "2.5rem",
           bodySize: backendTheme.styles?.bodySize || "1rem",
         },
-        spacing: backendTheme.styles?.spacing || "normal",
+        spacing: backendTheme.styles?.spacing || backendTheme.spacing || "normal",
+        containerWidth: backendTheme.containerWidth || "medium",
       };
-      // Normalize using our theme normalizer
+      // Normalize using our theme normalizer (preserves containerWidth)
       normalized.theme = normalizeTheme(normalized.theme);
     } else {
       normalized.theme = normalizeTheme(DEFAULT_THEME);

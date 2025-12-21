@@ -11,6 +11,37 @@
   position: relative;
 }
 
+/* Container width variants - applied to content sections */
+.portfolio-container[data-container-width="narrow"] > *:not(.portfolio-header) {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-xl);
+  padding-right: var(--spacing-xl);
+}
+
+.portfolio-container[data-container-width="medium"] > *:not(.portfolio-header) {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-xl);
+  padding-right: var(--spacing-xl);
+}
+
+.portfolio-container[data-container-width="wide"] > *:not(.portfolio-header) {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-xl);
+  padding-right: var(--spacing-xl);
+}
+
+.portfolio-container[data-container-width="full"] > *:not(.portfolio-header) {
+  max-width: 100%;
+  padding-left: var(--spacing-xl);
+  padding-right: var(--spacing-xl);
+}
+
 /* Portfolio Layout */
 .portfolio-single-page {
   width: 100%;

@@ -102,27 +102,56 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }, [displayPortfolio?.sections, sections]);
 
-  // Animation variants
-  const sectionVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
-    },
+  // Enhanced animation variants based on animation type
+  const getAnimationVariants = (animationType = "fade") => {
+    const baseTransition = {
+      duration: 0.3,
+      ease: [0.4, 0, 0.2, 1], // Smooth easing
+    };
+
+    switch (animationType) {
+      case "slide":
+        return {
+          hidden: { opacity: 0, y: 40, scale: 0.95 },
+          visible: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: {
+              ...baseTransition,
+              duration: 0.4,
+            },
+          },
+        };
+      case "scale":
+        return {
+          hidden: { opacity: 0, scale: 0.9 },
+          visible: {
+            opacity: 1,
+            scale: 1,
+            transition: baseTransition,
+          },
+        };
+      case "fade":
+      default:
+        return {
+          hidden: { opacity: 0, y: 20 },
+          visible: {
+            opacity: 1,
+            y: 0,
+            transition: baseTransition,
+          },
+        };
+    }
   };
 
-  const containerClass = `${layout === "multi-page" ? "portfolio-multi-page" : "portfolio-single-page"} ${isOwner ? "portfolio-editor-mode" : ""}`;
+  const animationType = displayPortfolio?.animations?.type || "fade";
+  const sectionVariants = getAnimationVariants(animationType);
 
-  // Debug logging
-  console.log("PortfolioRenderer - portfolio:", portfolio);
-  console.log("PortfolioRenderer - theme:", theme);
-  console.log("PortfolioRenderer - hero:", hero);
-  console.log("PortfolioRenderer - sections:", sortedSections);
-  console.log("PortfolioRenderer - sortedSections count:", sortedSections.length);
+  const containerClass = `${layout === "multi-page" ? "portfolio-multi-page" : "portfolio-single-page"} ${isOwner ? "portfolio-editor-mode" : ""}`;
+  const containerWidth = displayPortfolio?.theme?.containerWidth || "medium";
+
+  // Debug logging removed for production
 
   // Check if we have any content to render
   const displayHero = displayPortfolio?.hero || hero;
@@ -158,7 +187,10 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
   if (!hasHeroContent && !hasSections) {
     return (
       <PortfolioThemeProvider theme={theme}>
-        <div className={`portfolio-container ${containerClass}`}>
+        <div 
+          className={`portfolio-container ${containerClass}`}
+          data-container-width={containerWidth}
+        >
           <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
             <h1>Portfolio</h1>
             <p>This portfolio is empty. Add content to see it here.</p>
@@ -170,12 +202,16 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
 
   // For multi-page layouts with sectionId, show only that section (no hero on section pages)
   const shouldShowHero = layout === "multi-page" && sectionId ? false : hasHeroContent;
+  const shouldAnimate = displayPortfolio?.animations?.enabled;
 
   return (
     <PortfolioThemeProvider theme={displayPortfolio?.theme || theme}>
       {/* Portfolio container uses user's Settings theme for page background */}
       {/* Portfolio content sections use portfolio's own theme */}
-      <div className={`portfolio-container ${containerClass}`}>
+      <div 
+        className={`portfolio-container ${containerClass}`}
+        data-container-width={containerWidth}
+      >
         {/* Render Header for multi-page layouts */}
         {displayPortfolio?.layout === "multi-page" && (
           <PortfolioHeader portfolio={displayPortfolio} hero={displayHero} />
@@ -184,8 +220,8 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
         {/* Render Hero Section if exists and has content (only on home page for multi-page) */}
         {shouldShowHero && (
           <motion.div
-            initial={displayPortfolio?.animations?.enabled ? "hidden" : false}
-            animate={displayPortfolio?.animations?.enabled ? "visible" : false}
+            initial={shouldAnimate ? "hidden" : false}
+            animate={shouldAnimate ? "visible" : false}
             variants={sectionVariants}
           >
             <HeroSection data={displayHero} isOwner={isOwner} portfolio={displayPortfolio} />
@@ -213,16 +249,25 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
               />
             );
 
+            const animationDelay = displayPortfolio?.animations?.enabled 
+              ? index * 0.08 
+              : 0;
+            const shouldAnimate = displayPortfolio?.animations?.enabled;
+
             // Wrap with editable wrapper and draggable if owner
             if (isOwner && editorFunctions) {
               return (
                 <motion.div
                   key={section.id || index}
-                  initial={displayPortfolio?.animations?.enabled ? "hidden" : false}
-                  animate={displayPortfolio?.animations?.enabled ? "visible" : false}
+                  initial={shouldAnimate ? "hidden" : false}
+                  animate={shouldAnimate ? "visible" : false}
+                  whileHover={shouldAnimate ? { 
+                    scale: 1.01,
+                    transition: { duration: 0.2 }
+                  } : {}}
                   variants={sectionVariants}
                   transition={{
-                    delay: displayPortfolio?.animations?.enabled ? index * 0.1 : 0,
+                    delay: animationDelay,
                   }}
                 >
                   <DraggableSection
@@ -250,15 +295,17 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
               );
             }
 
-            // Non-owner or no editor context - render normally
+            // Non-owner or no editor context - render normally with animations
+            // Use whileInView for scroll-triggered animations instead of animate
             return (
               <motion.div
                 key={section.id || index}
-                initial={displayPortfolio?.animations?.enabled ? "hidden" : false}
-                animate={displayPortfolio?.animations?.enabled ? "visible" : false}
+                initial={shouldAnimate ? "hidden" : false}
+                animate={shouldAnimate ? "visible" : false}
+                viewport={{ once: true, margin: "-100px" }}
                 variants={sectionVariants}
                 transition={{
-                  delay: displayPortfolio?.animations?.enabled ? index * 0.1 : 0,
+                  delay: animationDelay,
                 }}
               >
                 {sectionElement}

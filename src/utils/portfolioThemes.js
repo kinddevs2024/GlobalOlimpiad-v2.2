@@ -80,6 +80,38 @@ export const THEME_PRESETS = {
     },
     spacing: "spacious",
   },
+  light: {
+    name: "Light",
+    colors: {
+      primary: "#1A1A1A",
+      secondary: "#6B7280",
+      background: "#FFFFFF",
+      text: "#111827",
+      accent: "#2563EB",
+    },
+    typography: {
+      fontFamily: "Inter, system-ui, sans-serif",
+      headingSize: "2.5rem",
+      bodySize: "1rem",
+    },
+    spacing: "normal",
+  },
+  "dark-mode": {
+    name: "Dark Mode",
+    colors: {
+      primary: "#F9FAFB",
+      secondary: "#D1D5DB",
+      background: "#111827",
+      text: "#F9FAFB",
+      accent: "#60A5FA",
+    },
+    typography: {
+      fontFamily: "Inter, system-ui, sans-serif",
+      headingSize: "2.75rem",
+      bodySize: "1rem",
+    },
+    spacing: "normal",
+  },
 };
 
 // Default theme
@@ -193,6 +225,8 @@ export const normalizeTheme = (theme) => {
       ...frontendTheme.typography,
     },
     spacing: frontendTheme.spacing || preset.spacing || "normal",
+    // Preserve containerWidth if it exists (for layout control)
+    containerWidth: frontendTheme.containerWidth || theme.containerWidth || "medium",
   };
 
   return normalized;

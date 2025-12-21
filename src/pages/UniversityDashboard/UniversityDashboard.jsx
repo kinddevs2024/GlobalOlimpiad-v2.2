@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { universityAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import PortfolioTable from "../../components/PortfolioTable/PortfolioTable";
+import PortfolioGrid from "../../components/PortfolioGrid/PortfolioGrid";
 import UnlockContactsModal from "../../components/UnlockContactsModal/UnlockContactsModal";
 import NotificationToast from "../../components/NotificationToast";
 import Pagination from "../../components/Pagination";
@@ -23,13 +24,23 @@ const UniversityDashboard = () => {
     verificationStatus: "all",
     ilsLevel: "",
     olympiadLevel: "",
+    search: "",
+    createdFrom: "",
+    createdTo: "",
   });
   const [sortBy, setSortBy] = useState("rating"); // rating, name, status
   const [sortOrder, setSortOrder] = useState("desc"); // asc, desc
+  const [viewMode, setViewMode] = useState("grid"); // "grid" or "table"
   const [contactsUnlocked, setContactsUnlocked] = useState({});
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  });
 
   // Olympiad state
   const [olympiads, setOlympiads] = useState([]);
@@ -59,18 +70,36 @@ const UniversityDashboard = () => {
     } else if (activeTab === "olympiads") {
       fetchOlympiads();
     }
-  }, [filters, activeTab]);
+  }, [filters, activeTab, currentPage]);
 
   const fetchPortfolios = async () => {
     try {
       setLoading(true);
-      const response = await universityAPI.getAllStudentPortfolios(filters);
-      let portfoliosData = response.data || [];
+      const response = await universityAPI.getAllStudentPortfolios({
+        ...filters,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
+      
+      // Use backend paginated data - response structure: { success, data: [...], pagination: {...} }
+      const portfoliosData = response.data?.data || response.data || [];
+      
+      // Update pagination from backend response
+      if (response.data?.pagination) {
+        setPagination(response.data.pagination);
+      } else {
+        // Fallback: if no pagination data, assume single page
+        setPagination({
+          page: currentPage,
+          limit: itemsPerPage,
+          total: portfoliosData.length,
+          pages: 1,
+        });
+      }
 
-      // Sort portfolios
-      portfoliosData = sortPortfolios(portfoliosData, sortBy, sortOrder);
-
-      setPortfolios(portfoliosData);
+      // Sort portfolios (backend already sorts, but we allow client-side override for UI consistency)
+      const sortedPortfolios = sortPortfolios(portfoliosData, sortBy, sortOrder);
+      setPortfolios(sortedPortfolios);
     } catch (error) {
       console.error("Error fetching portfolios:", error);
       setNotification({
@@ -117,7 +146,7 @@ const UniversityDashboard = () => {
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   const handleSort = (newSortBy) => {
@@ -129,12 +158,9 @@ const UniversityDashboard = () => {
     }
   };
 
-  useEffect(() => {
-    if (portfolios.length > 0) {
-      const sorted = sortPortfolios(portfolios, sortBy, sortOrder);
-      setPortfolios(sorted);
-    }
-  }, [sortBy, sortOrder]);
+  // Client-side sorting removed - backend handles sorting
+  // If client-side sorting is needed for UI consistency, it can be applied
+  // but should not interfere with backend pagination
 
   const handleViewPortfolio = (portfolio) => {
     window.open(`/portfolio/${portfolio.slug}`, "_blank");
@@ -182,15 +208,8 @@ const UniversityDashboard = () => {
     }
   };
 
-  const getPaginatedPortfolios = () => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return portfolios.slice(startIndex, endIndex);
-  };
-
-  const getTotalPages = () => {
-    return Math.ceil(portfolios.length / itemsPerPage);
-  };
+  // No longer needed - backend handles pagination
+  // Portfolios are already paginated from backend
 
   // Olympiad management functions
   const fetchOlympiads = async () => {
@@ -836,20 +855,40 @@ const UniversityDashboard = () => {
               </div>
 
               <div className="filter-group">
-                <label>Olympiad Level:</label>
-                <select
-                  className="filter-select"
-                  value={filters.olympiadLevel}
+                <label>Search:</label>
+                <input
+                  type="text"
+                  className="filter-input"
+                  placeholder="Search by name, title..."
+                  value={filters.search || ""}
                   onChange={(e) =>
-                    handleFilterChange("olympiadLevel", e.target.value)
+                    handleFilterChange("search", e.target.value)
                   }
-                >
-                  <option value="">All</option>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                  <option value="expert">Expert</option>
-                </select>
+                />
+              </div>
+
+              <div className="filter-group">
+                <label>Created From:</label>
+                <input
+                  type="date"
+                  className="filter-input"
+                  value={filters.createdFrom || ""}
+                  onChange={(e) =>
+                    handleFilterChange("createdFrom", e.target.value)
+                  }
+                />
+              </div>
+
+              <div className="filter-group">
+                <label>Created To:</label>
+                <input
+                  type="date"
+                  className="filter-input"
+                  value={filters.createdTo || ""}
+                  onChange={(e) =>
+                    handleFilterChange("createdTo", e.target.value)
+                  }
+                />
               </div>
 
               <div className="filter-group">
@@ -870,27 +909,56 @@ const UniversityDashboard = () => {
                   <option value="status-asc">Status</option>
                 </select>
               </div>
+
+              <div className="filter-group">
+                <label>View:</label>
+                <div className="view-mode-toggle">
+                  <button
+                    className={`view-mode-button ${viewMode === "grid" ? "active" : ""}`}
+                    onClick={() => setViewMode("grid")}
+                    title="Grid View"
+                  >
+                    ⬜
+                  </button>
+                  <button
+                    className={`view-mode-button ${viewMode === "table" ? "active" : ""}`}
+                    onClick={() => setViewMode("table")}
+                    title="Table View"
+                  >
+                    ☰
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Portfolio Table */}
             <div className="resolter-results card">
               <div className="results-header">
                 <h2 className="results-title">
-                  Student Portfolios ({portfolios.length})
+                  Student Portfolios ({pagination.total !== undefined ? pagination.total : portfolios.length})
                 </h2>
               </div>
 
-              <PortfolioTable
-                portfolios={getPaginatedPortfolios()}
-                onViewPortfolio={handleViewPortfolio}
-                onUnlockContacts={handleUnlockContacts}
-                contactsUnlocked={contactsUnlocked}
-              />
+              {viewMode === "grid" ? (
+                <PortfolioGrid
+                  portfolios={portfolios}
+                  onViewPortfolio={handleViewPortfolio}
+                  onUnlockContacts={handleUnlockContacts}
+                  contactsUnlocked={contactsUnlocked}
+                />
+              ) : (
+                <PortfolioTable
+                  portfolios={portfolios}
+                  onViewPortfolio={handleViewPortfolio}
+                  onUnlockContacts={handleUnlockContacts}
+                  contactsUnlocked={contactsUnlocked}
+                />
+              )}
 
-              {portfolios.length > itemsPerPage && (
+              {pagination.pages > 1 && (
                 <Pagination
-                  currentPage={currentPage}
-                  totalPages={getTotalPages()}
+                  currentPage={pagination.page || currentPage}
+                  totalPages={pagination.pages || 1}
                   onPageChange={setCurrentPage}
                 />
               )}

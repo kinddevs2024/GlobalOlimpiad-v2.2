@@ -38,6 +38,7 @@ import { USER_ROLES, GOOGLE_CLIENT_ID } from "./utils/constants";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TranslationProvider } from "./context/TranslationContext";
 import CookieConsentModal from "./components/CookieConsentModal/CookieConsentModal";
+import "./styles/design-tokens.css";
 import "./styles/globals.css";
 import "./styles/animations.css";
 

@@ -331,13 +331,25 @@ export const universityAPI = {
   // Get all student portfolios with filters
   getAllStudentPortfolios: (filters = {}) => {
     const params = new URLSearchParams();
-    if (filters.verificationStatus)
+    if (filters.verificationStatus && filters.verificationStatus !== "all")
       params.append("verificationStatus", filters.verificationStatus);
-    if (filters.ilsLevel) params.append("ilsLevel", filters.ilsLevel);
+    // Backend expects minILSLevel and maxILSLevel, not ilsLevel
+    // When a single level is selected, set both min and max to that value
+    if (filters.ilsLevel) {
+      params.append("minILSLevel", filters.ilsLevel);
+      params.append("maxILSLevel", filters.ilsLevel);
+    }
     if (filters.olympiadLevel)
       params.append("olympiadLevel", filters.olympiadLevel);
+    if (filters.search) params.append("search", filters.search);
+    if (filters.createdFrom) params.append("createdFrom", filters.createdFrom);
+    if (filters.createdTo) params.append("createdTo", filters.createdTo);
+    if (filters.minRating) params.append("minRating", filters.minRating);
+    if (filters.maxRating) params.append("maxRating", filters.maxRating);
+    if (filters.page) params.append("page", filters.page);
+    if (filters.limit) params.append("limit", filters.limit);
     const query = params.toString();
-    return api.get(`/university/portfolios${query ? `?${query}` : ""}`);
+    return api.get(`/portfolios${query ? `?${query}` : ""}`);
   },
 
   // Get student contact info (if access granted)
