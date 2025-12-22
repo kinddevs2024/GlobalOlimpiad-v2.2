@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { USER_ROLES } from "../utils/constants";
 
-const ProtectedRoute = ({ children, requiredRole = null }) => {
+const ProtectedRoute = ({ children, requiredRole = null, allowedRoles = null }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
@@ -24,15 +24,33 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (requiredRole) {
+  // Normalize role for comparison (handle underscore/hyphen variations)
+  const normalizeRole = (role) => {
+    if (!role) return role;
+    return role.replace(/_/g, "-");
+  };
+
+  const userRoleNormalized = normalizeRole(user.role);
+
+  // Check role access
+  if (allowedRoles && Array.isArray(allowedRoles)) {
+    // Multiple roles allowed - normalize all roles for comparison
+    const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
+    if (!normalizedAllowedRoles.includes(userRoleNormalized)) {
+      return <Navigate to="/dashboard" replace />;
+    }
+  } else if (requiredRole) {
     // For ADMIN role, also allow OWNER (owner has admin privileges)
     if (requiredRole === USER_ROLES.ADMIN) {
-      if (user.role !== USER_ROLES.ADMIN && user.role !== USER_ROLES.OWNER) {
+      const normalizedAdmin = normalizeRole(USER_ROLES.ADMIN);
+      const normalizedOwner = normalizeRole(USER_ROLES.OWNER);
+      if (userRoleNormalized !== normalizedAdmin && userRoleNormalized !== normalizedOwner) {
         return <Navigate to="/dashboard" replace />;
       }
     } else {
-      // For other roles, check exact match
-      if (user.role !== requiredRole) {
+      // For other roles, check exact match (normalized)
+      const normalizedRequired = normalizeRole(requiredRole);
+      if (userRoleNormalized !== normalizedRequired) {
         return <Navigate to="/dashboard" replace />;
       }
     }

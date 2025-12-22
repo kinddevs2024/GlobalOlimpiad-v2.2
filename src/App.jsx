@@ -34,6 +34,8 @@ import Contact from "./pages/Contact";
 import Services from "./pages/Services";
 import PortfolioView from "./pages/PortfolioView";
 import PortfolioConstructor from "./pages/PortfolioConstructor";
+import Universities from "./pages/Universities";
+import Schools from "./pages/Schools";
 import { USER_ROLES, GOOGLE_CLIENT_ID } from "./utils/constants";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TranslationProvider } from "./context/TranslationContext";
@@ -148,6 +150,24 @@ const AppRoutes = () => {
       />
 
       <Route
+        path="/universities"
+        element={
+          <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.OWNER]}>
+            <Universities />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/schools"
+        element={
+          <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.OWNER]}>
+            <Schools />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/owner"
         element={
           <ProtectedRoute requiredRole={USER_ROLES.OWNER}>
@@ -204,7 +224,17 @@ const AppRoutes = () => {
       <Route
         path="/profile"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={[
+              USER_ROLES.STUDENT,
+              USER_ROLES.ADMIN,
+              USER_ROLES.OWNER,
+              USER_ROLES.UNIVERSITY,
+              USER_ROLES.SCHOOL_ADMIN,
+              USER_ROLES.SCHOOL_TEACHER,
+              USER_ROLES.CHECKER,
+            ]}
+          >
             <Profile />
           </ProtectedRoute>
         }
@@ -213,7 +243,17 @@ const AppRoutes = () => {
       <Route
         path="/profile/edit"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={[
+              USER_ROLES.STUDENT,
+              USER_ROLES.ADMIN,
+              USER_ROLES.OWNER,
+              USER_ROLES.UNIVERSITY,
+              USER_ROLES.SCHOOL_ADMIN,
+              USER_ROLES.SCHOOL_TEACHER,
+              USER_ROLES.CHECKER,
+            ]}
+          >
             <ProfileEdit />
           </ProtectedRoute>
         }
@@ -240,7 +280,7 @@ const AppRoutes = () => {
       <Route
         path="/dashboard/portfolio"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={[USER_ROLES.STUDENT]}>
             <PortfolioConstructor />
           </ProtectedRoute>
         }

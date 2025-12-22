@@ -17,75 +17,68 @@ export const ROLE_NAVIGATION_CONFIG = {
     { label: "Profile", path: "/profile" },
   ],
 
-  // 🔵 UNIVERSITY
-  [USER_ROLES.UNIVERSITY]: [
-    { label: "University Dashboard", path: "/university" },
-    { label: "Students Portfolios", path: "/university-panel" },
-    { label: "Reservations", path: "/university-panel" },
-    { label: "Profile", path: "/profile" },
-  ],
-
-  // 🟣 OWNER - Must see ALL system pages (superuser)
-  [USER_ROLES.OWNER]: [
-    { label: "Dashboard", path: "/dashboard" },
-    { label: "Universities", path: "/university-panel" },
-    { label: "Schools", path: "/admin" },
-    { label: "Admin Panel", path: "/admin" },
-    { label: "Results", path: "/results" },
-    { label: "Users", path: "/owner" },
-    { label: "Profile", path: "/profile" },
-    { label: "System Settings", path: "/settings" },
-  ],
-
-  // 🔴 ADMIN
-  [USER_ROLES.ADMIN]: [
-    { label: "Admin Dashboard", path: "/admin" },
-    { label: "Olympiads Management", path: "/admin" },
-    { label: "Results Moderation", path: "/results" },
-    { label: "Users Management", path: "/admin" },
-    { label: "Schools", path: "/admin" },
-    { label: "Universities", path: "/university-panel" },
-    { label: "Profile", path: "/profile" },
-  ],
-
-  // 🟠 SCHOOL ADMIN
-  [USER_ROLES.SCHOOL_ADMIN]: [
-    { label: "School Dashboard", path: "/dashboard" },
-    { label: "Students", path: "/dashboard" },
-    { label: "Results", path: "/results" },
-    { label: "Teachers", path: "/dashboard" },
-    { label: "Profile", path: "/profile" },
-  ],
-  "school-admin": [ // Backend format
-    { label: "School Dashboard", path: "/dashboard" },
-    { label: "Students", path: "/dashboard" },
-    { label: "Results", path: "/results" },
-    { label: "Teachers", path: "/dashboard" },
-    { label: "Profile", path: "/profile" },
-  ],
-
-  // 🟡 SCHOOL TEACHER
+  // 🟡 SCHOOL-TEACHER / SCHOOL-ADMIN
   [USER_ROLES.SCHOOL_TEACHER]: [
+    { label: "Dashboard (School)", path: "/dashboard" },
     { label: "Students", path: "/school-teacher" },
     { label: "Results", path: "/results" },
     { label: "Profile", path: "/profile" },
   ],
   "school-teacher": [ // Backend format
+    { label: "Dashboard (School)", path: "/dashboard" },
     { label: "Students", path: "/school-teacher" },
     { label: "Results", path: "/results" },
     { label: "Profile", path: "/profile" },
   ],
 
-  // 🟤 RESOLTER
-  [USER_ROLES.RESOLTER]: [
-    { label: "Results Panel", path: "/resolter" },
+  [USER_ROLES.SCHOOL_ADMIN]: [
+    { label: "Dashboard (School)", path: "/dashboard" },
+    { label: "Students", path: "/dashboard" },
+    { label: "Results", path: "/results" },
     { label: "Profile", path: "/profile" },
+  ],
+  "school-admin": [ // Backend format
+    { label: "Dashboard (School)", path: "/dashboard" },
+    { label: "Students", path: "/dashboard" },
+    { label: "Results", path: "/results" },
+    { label: "Profile", path: "/profile" },
+  ],
+
+  // 🔵 UNIVERSITY
+  [USER_ROLES.UNIVERSITY]: [
+    { label: "Dashboard (University)", path: "/university" },
+    { label: "Students Portfolios", path: "/university-panel" },
+    { label: "Profile", path: "/profile" },
+  ],
+
+  // 🟣 RESOLTER
+  [USER_ROLES.RESOLTER]: [
+    { label: "Dashboard (Results)", path: "/resolter" },
+    { label: "Published Results", path: "/results" },
+  ],
+
+  // 🔴 ADMIN
+  [USER_ROLES.ADMIN]: [
+    { label: "Dashboard (Admin)", path: "/admin" },
+    { label: "Universities", path: "/universities" },
+    { label: "Schools", path: "/schools" },
+    { label: "Results", path: "/results" },
+    { label: "Profile", path: "/profile" },
+  ],
+
+  // ⚫ OWNER
+  [USER_ROLES.OWNER]: [
+    { label: "Dashboard (Owner)", path: "/owner" },
+    { label: "Olympiads", path: "/admin" },
+    { label: "Universities", path: "/universities" },
+    { label: "Schools", path: "/schools" },
+    { label: "Results", path: "/results" },
+    { label: "Settings", path: "/settings" },
   ],
 
   // ⚫ CHECKER
   [USER_ROLES.CHECKER]: [
     { label: "Verification Panel", path: "/checker" },
-    { label: "Pending Submissions", path: "/checker" },
     { label: "Profile", path: "/profile" },
   ],
 };
@@ -155,8 +148,13 @@ export const isActiveRoute = (menuPath, currentPath) => {
     return true;
   }
   
-  // Handle university panel routes
-  if (menuPath === "/university-panel" && currentPath.startsWith("/university")) {
+  // Handle university panel routes (check before university to avoid false matches)
+  if (menuPath === "/university-panel" && currentPath.startsWith("/university-panel")) {
+    return true;
+  }
+
+  // Handle university routes (exact match or /university/ but not /university-panel)
+  if (menuPath === "/university" && (currentPath === "/university" || (currentPath.startsWith("/university/") && !currentPath.startsWith("/university-panel")))) {
     return true;
   }
   
@@ -182,6 +180,16 @@ export const isActiveRoute = (menuPath, currentPath) => {
   
   // Handle school teacher panel routes
   if (menuPath === "/school-teacher" && currentPath.startsWith("/school-teacher")) {
+    return true;
+  }
+
+  // Handle universities routes
+  if (menuPath === "/universities" && currentPath.startsWith("/universities")) {
+    return true;
+  }
+
+  // Handle schools routes
+  if (menuPath === "/schools" && currentPath.startsWith("/schools")) {
     return true;
   }
   
