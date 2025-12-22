@@ -140,7 +140,6 @@ const CompleteProfile = () => {
           jsonData.userLogo = logoUrl;
         }
 
-        console.log("Sending profile data as JSON:", jsonData);
         response = await authAPI.updateProfile(jsonData);
       } else {
         // Has file upload, use FormData
@@ -178,11 +177,6 @@ const CompleteProfile = () => {
           updateData.append("userLogo", logoUrl);
         }
 
-        console.log("Sending profile data as FormData");
-        // Log FormData contents for debugging
-        for (let pair of updateData.entries()) {
-          console.log(pair[0] + ": " + pair[1]);
-        }
         response = await authAPI.updateProfile(updateData);
       }
       // Fetch updated user data with devices from /me endpoint

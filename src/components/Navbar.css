@@ -60,6 +60,16 @@
   width: 80%;
 }
 
+.navbar-link.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.navbar-link.active::after {
+  width: 80%;
+  background: var(--accent);
+}
+
 .navbar-user {
   display: flex;
   align-items: center;

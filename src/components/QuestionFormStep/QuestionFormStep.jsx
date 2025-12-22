@@ -78,7 +78,7 @@ const QuestionFormStep = ({
       </p>
 
       {/* Questions List */}
-      {questions.length > 0 && (
+      {questions && questions.length > 0 && (
         <div className="questions-list">
           <h3>Added Questions ({questions.length})</h3>
           {questions.map((q, index) => (
@@ -87,8 +87,8 @@ const QuestionFormStep = ({
                 <span className="question-number">Q{index + 1}</span>
                 <span className="question-points">{q.points} pts</span>
               </div>
-              <p className="question-text">{q.question}</p>
-              {q.type === "multiple-choice" && q.options && (
+              <p className="question-text">{q.question || "No question text"}</p>
+              {q.type === "multiple-choice" && q.options && q.options.length > 0 && (
                 <div className="question-options">
                   {q.options.map((opt, optIndex) => (
                     <div

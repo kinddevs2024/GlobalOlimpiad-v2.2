@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getNavigationItems, isActiveRoute } from "../utils/navigationConfig";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -25,6 +26,11 @@ const Navbar = () => {
   if (!isAuthenticated && !isPublicPage) {
     return null;
   }
+
+  // Get role-based navigation items
+  const navigationItems = isAuthenticated && user?.role 
+    ? getNavigationItems(user.role)
+    : [];
 
   return (
     <nav className="navbar">
@@ -53,18 +59,18 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <>
-              <Link to="/dashboard" className="navbar-link">
-                Dashboard
-              </Link>
-              <Link to="/dashboard/portfolio" className="navbar-link">
-                Portfolio
-              </Link>
-              <Link to="/profile" className="navbar-link">
-                Profile
-              </Link>
-              <Link to="/results" className="navbar-link">
-                Results
-              </Link>
+              {/* Render role-based navigation items */}
+              {navigationItems.map((item, index) => (
+                <Link
+                  key={`${item.path}-${item.label}-${index}`}
+                  to={item.path}
+                  className={`navbar-link ${
+                    isActiveRoute(item.path, location.pathname) ? "active" : ""
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
 
               <div className="navbar-user">
                 <span className="navbar-username">{user?.email}</span>

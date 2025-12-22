@@ -46,8 +46,8 @@ const QuestionManager = ({ olympiad, onClose }) => {
           });
           return;
         }
-        const validOptions = questionForm.options.filter(
-          (opt) => opt.trim() !== ""
+        const validOptions = (Array.isArray(questionForm.options) ? questionForm.options : []).filter(
+          (opt) => opt && String(opt).trim() !== ""
         );
         if (validOptions.length < 2) {
           setNotification({
@@ -63,7 +63,7 @@ const QuestionManager = ({ olympiad, onClose }) => {
           type: "multiple-choice",
           options: validOptions,
           correctAnswer: questionForm.correctAnswer,
-          points: questionForm.points,
+          points: Number(questionForm.points) || 10,
           order: questions.length + 1,
         });
       } else {
@@ -79,7 +79,7 @@ const QuestionManager = ({ olympiad, onClose }) => {
           olympiadId: olympiad._id,
           question: questionForm.question,
           type: "essay",
-          points: questionForm.points,
+          points: Number(questionForm.points) || 10,
           order: questions.length + 1,
         });
       }
@@ -166,7 +166,7 @@ const QuestionManager = ({ olympiad, onClose }) => {
               {olympiad.type === "test" && (
                 <div className="form-group">
                   <label>Options</label>
-                  {questionForm.options.map((option, index) => (
+                  {(Array.isArray(questionForm.options) ? questionForm.options : []).map((option, index) => (
                     <div key={index} className="option-input-row">
                       <span className="option-label">
                         {String.fromCharCode(65 + index)}.
@@ -210,7 +210,7 @@ const QuestionManager = ({ olympiad, onClose }) => {
                     onChange={(e) =>
                       setQuestionForm({
                         ...questionForm,
-                        points: parseInt(e.target.value) || 10,
+                        points: Number(e.target.value) || 10,
                       })
                     }
                     min="1"
@@ -231,16 +231,16 @@ const QuestionManager = ({ olympiad, onClose }) => {
                 <p>No questions yet. Add your first question!</p>
               </div>
             ) : (
-              questions.map((q, index) => (
+              (Array.isArray(questions) ? questions : []).map((q, index) => (
                 <div key={q._id || index} className="question-item card">
                   <div className="question-header">
                     <span className="question-number">Q{index + 1}</span>
-                    <span className="question-points">{q.points} pts</span>
+                    <span className="question-points">{Number(q.points) || 0} pts</span>
                   </div>
                   <p className="question-text">{q.question}</p>
                   {q.type === "multiple-choice" && q.options && (
                     <div className="question-options">
-                      {q.options.map((opt, optIndex) => (
+                      {(Array.isArray(q.options) ? q.options : []).map((opt, optIndex) => (
                         <div
                           key={optIndex}
                           className={`option ${
@@ -375,14 +375,13 @@ const UniversityPanel = () => {
         subject: formData.subject,
         startTime: formatDateTime(formData.startTime),
         endTime: formatDateTime(formData.endTime),
-        duration: formData.duration * 60, // Convert minutes to seconds
+        duration: (Number(formData.duration) || 60) * 60, // Convert minutes to seconds
         status: formData.status,
         universityName: formData.universityName,
       };
 
       // Create olympiad first
       const response = await universityAPI.createOlympiad(olympiadData);
-      console.log("Create olympiad response:", response.data);
 
       // Try multiple possible response structures
       const newOlympiadId =
@@ -405,12 +404,10 @@ const UniversityPanel = () => {
       // Now upload logo if one was selected, using the newly created olympiad ID
       if (formData.olympiadLogo) {
         try {
-          console.log("Uploading logo for olympiad:", newOlympiadId);
           const logoResponse = await universityAPI.uploadOlympiadLogo(
             formData.olympiadLogo,
             newOlympiadId
           );
-          console.log("Logo upload response:", logoResponse.data);
 
           // Logo should now be associated with the olympiad via backend
           setNotification({
@@ -557,7 +554,7 @@ const UniversityPanel = () => {
         type: olympiadData.type || "test",
         startTime: formatToLocalDateTime(olympiadData.startTime),
         endTime: formatToLocalDateTime(olympiadData.endTime),
-        duration: Math.floor((olympiadData.duration || 3600) / 60), // Convert seconds to minutes
+        duration: Math.floor((Number(olympiadData.duration) || 3600) / 60), // Convert seconds to minutes
         status: olympiadData.status || "draft",
         olympiadLogo: null, // Logo will be loaded from backend URL if exists
         universityName: olympiadData.universityName || "",
@@ -606,12 +603,10 @@ const UniversityPanel = () => {
       // Then upload new logo if one was selected
       if (formData.olympiadLogo && formData.olympiadLogo instanceof File) {
         try {
-          console.log("Uploading logo for olympiad:", editingOlympiad);
           const logoResponse = await universityAPI.uploadOlympiadLogo(
             formData.olympiadLogo,
             editingOlympiad
           );
-          console.log("Logo upload response:", logoResponse.data);
 
           setNotification({
             message: "Olympiad updated and logo uploaded successfully",
@@ -695,7 +690,7 @@ const UniversityPanel = () => {
   // Filter olympiads by status
   const getFilteredOlympiads = () => {
     if (statusFilter === "all") return olympiads;
-    return olympiads.filter((olympiad) => {
+    return (Array.isArray(olympiads) ? olympiads : []).filter((olympiad) => {
       if (statusFilter === "published") return olympiad.status === "published";
       if (statusFilter === "unpublished")
         return olympiad.status === "unpublished";
@@ -1018,7 +1013,7 @@ const UniversityPanel = () => {
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            duration: parseInt(e.target.value) || 60,
+                            duration: Number(e.target.value) || 60,
                           })
                         }
                         required
@@ -1026,7 +1021,7 @@ const UniversityPanel = () => {
                         placeholder="60"
                       />
                       <small style={{ color: "#888", fontSize: "12px" }}>
-                        Will be converted to seconds ({formData.duration * 60}s)
+                        Will be converted to seconds ({(Number(formData.duration) || 60) * 60}s)
                       </small>
                     </div>
                     <div className="form-group">
@@ -1169,7 +1164,7 @@ const UniversityPanel = () => {
         )}
 
         <div className="admin-olympiads">
-          {getFilteredOlympiads().map((olympiad) => {
+          {(Array.isArray(getFilteredOlympiads()) ? getFilteredOlympiads() : []).map((olympiad) => {
             // Get logo URL - handle both relative and absolute URLs
             // Check multiple possible field names for logo
             const logoField =

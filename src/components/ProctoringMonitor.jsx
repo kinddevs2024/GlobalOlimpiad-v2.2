@@ -146,7 +146,6 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
         if (!response.ok) {
           console.error('Failed to send exit screenshot:', response.statusText);
         } else {
-          console.log('Exit screenshot sent successfully - saved to uploads/users/{userId}/');
         }
       }).catch((error) => {
         console.error('Error sending exit screenshot:', error);
@@ -172,11 +171,9 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
 
       if (isPageVisible && !currentlyVisible) {
         // User switched tabs or minimized window
-        console.log('Page became hidden - capturing exit screenshot');
         sendExitScreenshot('tab_switch');
       } else if (!isPageVisible && currentlyVisible) {
         // User returned to tab
-        console.log('Page became visible again');
         exitScreenshotSentRef.current = false; // Reset to allow future exit screenshots
       }
 
@@ -185,13 +182,11 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
 
     const handleBeforeUnload = (e) => {
       // User is closing page or navigating away
-      console.log('Page unloading - capturing exit screenshot');
       sendExitScreenshot('close');
     };
 
     const handlePageHide = () => {
       // Fallback for browsers that support pagehide
-      console.log('Page hiding - capturing exit screenshot');
       sendExitScreenshot('navigate');
     };
 
@@ -402,7 +397,6 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
 
         // Start recording
         mediaRecorder.start(1000); // Collect data every 1 second
-        console.log('Camera recording started at 720p');
 
       } catch (error) {
         console.error('Error starting camera MediaRecorder:', error);
@@ -439,7 +433,6 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
 
         // Start recording
         mediaRecorder.start(1000); // Collect data every 1 second
-        console.log('Screen recording started at 720p');
 
       } catch (error) {
         console.error('Error starting screen MediaRecorder:', error);
@@ -588,7 +581,6 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
         // Upload both videos in parallel
         if (uploadPromises.length > 0) {
           await Promise.all(uploadPromises);
-          console.log('All videos uploaded successfully');
           setUploadStatus('Upload complete');
         } else {
           console.warn('No video chunks to upload');
@@ -617,7 +609,6 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
           type: 'video/webm'
         });
 
-        console.log(`${type} video blob created: ${(videoBlob.size / 1024 / 1024).toFixed(2)} MB`);
 
         // Create File object from blob
         // Generate filename: {userId}_{date}_{olympiad-name}_{type}.webm
@@ -643,7 +634,6 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
           }));
         });
 
-        console.log(`${type} video uploaded successfully`);
         
         // Clear chunks after successful upload
         if (type === 'camera') {

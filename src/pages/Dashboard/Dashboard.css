@@ -1,8 +1,7 @@
 .dashboard-page {
-  min-height: 100vh;
-  padding: 40px 20px;
-  background: var(--bg-primary);
+  /* Styles inherited from globals.css .dashboard-page */
 }
+
 
 .dashboard-loading {
   min-height: 100vh;
@@ -13,40 +12,39 @@
 
 .dashboard-header {
   text-align: center;
-  margin-bottom: 48px;
-  animation: fadeIn 0.5s ease;
+  margin-bottom: var(--spacing-xl);
 }
 
 .dashboard-title {
-  font-size: 48px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  letter-spacing: -2px;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-base);
+  letter-spacing: -1px;
 }
 
 .dashboard-subtitle {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   color: var(--text-secondary);
 }
 
 .dashboard-filters {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 40px;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
   flex-wrap: wrap;
 }
 
 .filter-button {
-  padding: 0.5rem 1rem;
+  padding: var(--spacing-sm) var(--spacing-base);
   background: transparent;
   border: 1px solid var(--accent);
   color: var(--text-primary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 13px;
-  font-weight: 500;
+  transition: all var(--transition-slow);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   position: relative;
   overflow: hidden;
 }
@@ -59,7 +57,7 @@
   width: 100%;
   height: 100%;
   background: var(--accent);
-  transition: left 0.3s ease;
+  transition: left var(--transition-slow);
   z-index: -1;
 }
 
@@ -70,11 +68,16 @@
 .filter-button:hover {
   color: var(--bg-primary);
   box-shadow: 0 0 20px var(--glow);
-  transform: translateY(-2px);
+  transform: translateY(calc(-1 * var(--spacing-sm)));
 }
 
 .filter-button:active {
   transform: translateY(0);
+}
+
+.filter-button:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .filter-button.active {
@@ -90,20 +93,14 @@
 .olympiads-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 24px;
-  max-width: 1200px;
+  gap: var(--spacing-lg);
+  max-width: var(--container-xl);
   margin: 0 auto;
 }
 
 .olympiad-card {
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
-  animation: fadeIn 0.5s ease;
-}
-
-.olympiad-card:hover {
-  transform: translateY(-8px);
 }
 
 .olympiad-card-logo-container {
@@ -113,8 +110,8 @@
   align-items: center;
   justify-content: center;
   background: var(--bg-tertiary);
-  border-radius: 8px;
-  margin-bottom: 20px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-base);
   overflow: hidden;
   border: 1px solid var(--border);
 }
@@ -123,12 +120,12 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .logo-placeholder {
-  font-size: 64px;
-  opacity: 0.3;
+  font-size: var(--font-size-4xl);
+  opacity: 0.25;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,22 +137,22 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
-  gap: 12px;
+  margin-bottom: var(--spacing-base);
+  gap: var(--spacing-md);
 }
 
 .olympiad-title {
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
   flex: 1;
 }
 
 .status-badge {
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
@@ -183,7 +180,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: var(--spacing-xs);
 }
 
 /* Olympiad status badges (for admins/owners) */
@@ -207,11 +204,11 @@
 .olympiad-meta {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 16px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-base);
+  padding: var(--spacing-base);
   background: var(--bg-tertiary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
 
@@ -222,24 +219,24 @@
 }
 
 .meta-label {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .meta-value {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-transform: capitalize;
 }
 
 .olympiad-dates {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding-top: 20px;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-base);
+  padding-top: var(--spacing-base);
   border-top: 1px solid var(--border);
 }
 
@@ -247,7 +244,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .date-label {
@@ -256,47 +253,36 @@
 
 .date-value {
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .olympiad-action {
   margin-top: auto;
-  padding-top: 20px;
+  padding-top: var(--spacing-base);
   border-top: 1px solid var(--border);
 }
 
 .action-text {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--accent);
   display: block;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all var(--transition-slow);
 }
 
 .olympiad-card:hover .action-text {
   text-shadow: 0 0 10px var(--glow);
-  transform: translateX(5px);
+  transform: translateX(var(--spacing-xs));
 }
 
 .empty-state {
   grid-column: 1 / -1;
-  text-align: center;
-  padding: 60px 20px;
-  animation: fadeIn 0.5s ease;
-}
-
-.empty-icon {
-  display: inline-block;
-  padding: "0.75rem 1.5rem";
-  text-decoration: none;
-  border-radius: 8px;
 }
 
 /* Olympiad sections for student view */
 .olympiad-section {
-  margin-bottom: 60px;
-  animation: fadeIn 0.5s ease;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .olympiad-section:last-child {
@@ -304,25 +290,25 @@
 }
 
 .section-header {
-  margin-bottom: 32px;
+  margin-bottom: var(--spacing-xl);
   text-align: center;
 }
 
 .section-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-base);
   color: var(--text-primary);
 }
 
 .section-subtitle {
-  font-size: 16px;
+  font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {
   .dashboard-title {
-    font-size: 36px;
+    font-size: var(--font-size-4xl);
   }
 
   .olympiads-grid {
@@ -334,7 +320,7 @@
   }
 
   .section-title {
-    font-size: 24px;
+    font-size: var(--font-size-2xl);
   }
 }
 
@@ -350,12 +336,11 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
-  animation: fadeIn 0.3s ease;
+  padding: var(--spacing-base);
 }
 
 .modal-content {
-  max-width: 800px;
+  max-width: var(--container-lg);
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -379,14 +364,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px;
+  padding: var(--spacing-lg);
   border-bottom: 2px solid var(--border);
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .modal-title {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   color: var(--text-primary);
   margin: 0;
 }
@@ -394,17 +379,17 @@
 .modal-close {
   background: none;
   border: none;
-  font-size: 32px;
+  font-size: var(--font-size-3xl);
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: var(--spacing-xl);
+  height: var(--spacing-xl);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.3s ease;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-slow);
 }
 
 .modal-close:hover {
@@ -413,14 +398,14 @@
 }
 
 .modal-loading {
-  padding: 60px;
+  padding: var(--spacing-3xl);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .modal-body {
-  padding: 0 24px 24px;
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
 }
 
 .modal-logo-container {
@@ -431,8 +416,8 @@
   align-items: center;
   justify-content: center;
   background: var(--bg-tertiary);
-  border-radius: 8px;
-  margin-bottom: 24px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
   overflow: hidden;
   border: 1px solid var(--border);
 }
@@ -441,65 +426,65 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .modal-badges {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
   flex-wrap: wrap;
 }
 
 .modal-section {
-  margin-bottom: 32px;
+  margin-bottom: var(--spacing-xl);
 }
 
 .modal-section .section-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 16px;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-base);
   color: var(--text-primary);
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: var(--spacing-base);
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
   background: var(--bg-tertiary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
 
 .info-label {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .info-value {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   text-transform: capitalize;
 }
 
 .description-text {
-  padding: 16px;
+  padding: var(--spacing-base);
   background: var(--bg-tertiary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  line-height: 1.6;
+  line-height: var(--line-height-normal);
   white-space: pre-wrap;
 }
 
@@ -511,21 +496,21 @@
 .questions-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-md);
 }
 
 .question-preview-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
   background: var(--bg-tertiary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
 
 .question-number {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--accent);
   min-width: 30px;
 }
@@ -533,34 +518,34 @@
 .question-text {
   flex: 1;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 .question-points {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .more-questions {
   text-align: center;
-  padding: 12px;
+  padding: var(--spacing-md);
   color: var(--text-secondary);
   font-style: italic;
 }
 
 .no-questions {
   text-align: center;
-  padding: 24px;
+  padding: var(--spacing-lg);
   color: var(--text-secondary);
 }
 
 .modal-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-md);
   flex-wrap: wrap;
-  margin-top: 32px;
-  padding-top: 24px;
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
   border-top: 2px solid var(--border);
 }
 
@@ -576,11 +561,11 @@
   }
 
   .modal-header {
-    padding: 16px;
+    padding: var(--spacing-base);
   }
 
   .modal-body {
-    padding: 0 16px 16px;
+    padding: 0 var(--spacing-base) var(--spacing-base);
   }
 
   .info-grid {

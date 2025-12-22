@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { universityAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import PortfolioTable from "../../components/PortfolioTable/PortfolioTable";
@@ -64,54 +64,7 @@ const UniversityDashboard = () => {
 
   const [notification, setNotification] = useState(null);
 
-  useEffect(() => {
-    if (activeTab === "portfolios") {
-      fetchPortfolios();
-    } else if (activeTab === "olympiads") {
-      fetchOlympiads();
-    }
-  }, [filters, activeTab, currentPage]);
-
-  const fetchPortfolios = async () => {
-    try {
-      setLoading(true);
-      const response = await universityAPI.getAllStudentPortfolios({
-        ...filters,
-        page: currentPage,
-        limit: itemsPerPage,
-      });
-      
-      // Use backend paginated data - response structure: { success, data: [...], pagination: {...} }
-      const portfoliosData = response.data?.data || response.data || [];
-      
-      // Update pagination from backend response
-      if (response.data?.pagination) {
-        setPagination(response.data.pagination);
-      } else {
-        // Fallback: if no pagination data, assume single page
-        setPagination({
-          page: currentPage,
-          limit: itemsPerPage,
-          total: portfoliosData.length,
-          pages: 1,
-        });
-      }
-
-      // Sort portfolios (backend already sorts, but we allow client-side override for UI consistency)
-      const sortedPortfolios = sortPortfolios(portfoliosData, sortBy, sortOrder);
-      setPortfolios(sortedPortfolios);
-    } catch (error) {
-      console.error("Error fetching portfolios:", error);
-      setNotification({
-        message: "Failed to load portfolios",
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const sortPortfolios = (data, sortBy, order) => {
+  const sortPortfolios = useCallback((data, sortBy, order) => {
     const sorted = [...data];
     sorted.sort((a, b) => {
       let aVal, bVal;
@@ -142,7 +95,60 @@ const UniversityDashboard = () => {
       }
     });
     return sorted;
-  };
+  }, []);
+
+  const fetchPortfolios = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await universityAPI.getAllStudentPortfolios({
+        ...filters,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
+
+      const portfoliosData = Array.isArray(response.data?.data)
+        ? response.data.data
+        : Array.isArray(response.data)
+        ? response.data
+        : [];
+
+      if (response.data?.pagination) {
+        setPagination({
+          page:
+            Number(response.data.pagination.page) || Number(currentPage) || 1,
+          limit:
+            Number(response.data.pagination.limit) ||
+            Number(itemsPerPage) ||
+            20,
+          total: Number(response.data.pagination.total) || 0,
+          pages: Number(response.data.pagination.pages) || 1,
+        });
+      } else {
+        // Fallback: if no pagination data, assume single page
+        setPagination({
+          page: Number(currentPage) || 1,
+          limit: Number(itemsPerPage) || 20,
+          total: Array.isArray(portfoliosData) ? portfoliosData.length : 0,
+          pages: 1,
+        });
+      }
+
+      const sortedPortfolios = sortPortfolios(
+        portfoliosData,
+        sortBy,
+        sortOrder
+      );
+      setPortfolios(sortedPortfolios);
+    } catch (error) {
+      console.error("Error fetching portfolios:", error);
+      setNotification({
+        message: "Failed to load portfolios",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, currentPage, itemsPerPage, sortBy, sortOrder, sortPortfolios]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -187,7 +193,7 @@ const UniversityDashboard = () => {
       );
       if (response.data) {
         setPortfolios((prev) =>
-          prev.map((p) =>
+          (prev || []).map((p) =>
             p._id === selectedPortfolio._id ? { ...p, ...response.data } : p
           )
         );
@@ -201,32 +207,30 @@ const UniversityDashboard = () => {
       setSelectedPortfolio(null);
     } catch (error) {
       console.error("Error unlocking contacts:", error);
+      console.error("Error unlocking contacts:", error);
       setNotification({
-        message: error.response?.data?.message || "Failed to unlock contacts",
+        message: "Failed to unlock contacts. Please try again.",
         type: "error",
       });
     }
   };
 
-  // No longer needed - backend handles pagination
-  // Portfolios are already paginated from backend
-
-  // Olympiad management functions
-  const fetchOlympiads = async () => {
+  const fetchOlympiads = useCallback(async () => {
     try {
       setOlympiadsLoading(true);
       const response = await universityAPI.getAllOlympiads();
-      setOlympiads(response.data || []);
+      const olympiadsData = response.data?.data || response.data || [];
+      setOlympiads(Array.isArray(olympiadsData) ? olympiadsData : []);
     } catch (error) {
       console.error("Error fetching olympiads:", error);
       setNotification({
-        message: "Failed to load olympiads",
+        message: "Failed to load olympiads. Please try again later.",
         type: "error",
       });
     } finally {
       setOlympiadsLoading(false);
     }
-  };
+  }, []);
 
   const handleTypeSelect = (type) => {
     setFormData({ ...formData, type });
@@ -266,7 +270,7 @@ const UniversityDashboard = () => {
         subject: formData.subject,
         startTime: formatDateTime(formData.startTime),
         endTime: formatDateTime(formData.endTime),
-        duration: formData.duration * 60,
+        duration: (Number(formData.duration) || 60) * 60,
         status: formData.status,
         universityName: formData.universityName, // Include university name
       };
@@ -304,7 +308,7 @@ const UniversityDashboard = () => {
     } catch (error) {
       console.error("Error creating olympiad:", error);
       setNotification({
-        message: error.response?.data?.message || "Failed to create olympiad",
+        message: "Failed to create olympiad. Please try again.",
         type: "error",
       });
     } finally {
@@ -370,8 +374,8 @@ const UniversityDashboard = () => {
   }
 
   return (
-    <div className="university-dashboard-page">
-      <div className="container">
+    <div className="university-dashboard-page page-container">
+      <div>
         <div className="university-header">
           <h1 className="university-title text-glow">University Dashboard</h1>
           <p className="university-subtitle">
@@ -382,7 +386,7 @@ const UniversityDashboard = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="dashboard-filters" style={{ marginBottom: "2rem" }}>
+        <div className="dashboard-filters with-margin">
           <button
             className={`filter-button ${
               activeTab === "portfolios" ? "active" : ""
@@ -404,16 +408,8 @@ const UniversityDashboard = () => {
         {/* Olympiads Tab */}
         {activeTab === "olympiads" && (
           <>
-            <div
-              className="university-header-actions"
-              style={{
-                marginBottom: "2rem",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <h2 style={{ margin: 0 }}>Olympiad Management</h2>
+            <div className="university-header-actions">
+              <h2>Olympiad Management</h2>
               <button
                 className="button-primary"
                 onClick={() => {
@@ -442,10 +438,7 @@ const UniversityDashboard = () => {
             </div>
 
             {showCreateForm && (
-              <div
-                className="create-form card"
-                style={{ marginBottom: "2rem" }}
-              >
+              <div className="create-form card">
                 {/* Step Indicator */}
                 <div className="step-indicator">
                   <div
@@ -617,7 +610,7 @@ const UniversityDashboard = () => {
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
-                                duration: parseInt(e.target.value) || 60,
+                                duration: Number(e.target.value) || 60,
                               })
                             }
                             min="1"
@@ -684,23 +677,23 @@ const UniversityDashboard = () => {
                       {formData.type === "test" ? "test" : "essay"} olympiad
                     </p>
 
-                    {questions.length > 0 && (
+                    {(questions || []).length > 0 && (
                       <div className="questions-list">
-                        <h3>Added Questions ({questions.length})</h3>
-                        {questions.map((q, index) => (
+                        <h3>Added Questions ({(questions || []).length})</h3>
+                        {(questions || []).map((q, index) => (
                           <div key={index} className="question-item card">
                             <div className="question-header">
                               <span className="question-number">
                                 Q{index + 1}
                               </span>
                               <span className="question-points">
-                                {q.points} pts
+                                {Number(q?.points) || 0} pts
                               </span>
                             </div>
                             <p className="question-text">{q.question}</p>
                             {q.type === "multiple-choice" && q.options && (
                               <div className="question-options">
-                                {q.options.map((opt, optIndex) => (
+                                {(q.options || []).map((opt, optIndex) => (
                                   <div
                                     key={optIndex}
                                     className={`option ${
@@ -737,78 +730,75 @@ const UniversityDashboard = () => {
               </div>
             ) : (
               <div className="olympiads-grid">
-                {olympiads.map((olympiad) => (
-                  <div
-                    key={olympiad._id}
-                    className="olympiad-card card card-interactive"
-                  >
-                    <div className="olympiad-card-header">
-                      <div className="olympiad-title">{olympiad.title}</div>
-                      <span
-                        className={`status-badge status-${
-                          olympiad.status || "draft"
-                        }`}
+                {Array.isArray(olympiads) && olympiads.length > 0
+                  ? (olympiads || []).map((olympiad) => (
+                      <div
+                        key={olympiad._id}
+                        className="olympiad-card card card-interactive"
                       >
-                        {olympiad.status || "draft"}
-                      </span>
-                    </div>
-                    <div className="olympiad-meta">
-                      {olympiad.universityName && (
-                        <div className="olympiad-meta-item">
-                          <span className="meta-label">University:</span>
-                          <span className="meta-value">
-                            {olympiad.universityName}
+                        <div className="olympiad-card-header">
+                          <div className="olympiad-title">{olympiad.title}</div>
+                          <span
+                            className={`status-badge status-${
+                              olympiad.status || "draft"
+                            }`}
+                          >
+                            {olympiad.status || "draft"}
                           </span>
                         </div>
-                      )}
-                      <div className="olympiad-meta-item">
-                        <span className="meta-label">Subject:</span>
-                        <span className="meta-value">{olympiad.subject}</span>
-                      </div>
-                      <div className="olympiad-meta-item">
-                        <span className="meta-label">Type:</span>
-                        <span className="meta-value">{olympiad.type}</span>
-                      </div>
-                      {olympiad.startTime && (
-                        <div className="olympiad-meta-item">
-                          <span className="meta-label">Start:</span>
-                          <span className="meta-value">
-                            {formatDate(olympiad.startTime)}
-                          </span>
+                        <div className="olympiad-meta">
+                          {olympiad.universityName && (
+                            <div className="olympiad-meta-item">
+                              <span className="meta-label">University:</span>
+                              <span className="meta-value">
+                                {olympiad.universityName}
+                              </span>
+                            </div>
+                          )}
+                          <div className="olympiad-meta-item">
+                            <span className="meta-label">Subject:</span>
+                            <span className="meta-value">
+                              {olympiad.subject}
+                            </span>
+                          </div>
+                          <div className="olympiad-meta-item">
+                            <span className="meta-label">Type:</span>
+                            <span className="meta-value">{olympiad.type}</span>
+                          </div>
+                          {olympiad.startTime && (
+                            <div className="olympiad-meta-item">
+                              <span className="meta-label">Start:</span>
+                              <span className="meta-value">
+                                {formatDate(olympiad.startTime)}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <div className="olympiad-card-actions">
+                          <a
+                            href={`/olympiad/${olympiad._id}`}
+                            className="button-secondary"
+                          >
+                            View Details
+                          </a>
+                          <a
+                            href={`/olympiad/${olympiad._id}/results`}
+                            className="button-primary"
+                          >
+                            View Results
+                          </a>
+                        </div>
+                      </div>
+                    ))
+                  : null}
+                {(!Array.isArray(olympiads) || olympiads.length === 0) &&
+                  !olympiadsLoading && (
+                    <div className="empty-state">
+                      <div className="empty-icon">🏆</div>
+                      <h3>No olympiads yet</h3>
+                      <p>Create your first olympiad to get started.</p>
                     </div>
-                    <div className="olympiad-card-actions">
-                      <a
-                        href={`/olympiad/${olympiad._id}`}
-                        className="button-secondary"
-                        style={{
-                          textDecoration: "none",
-                          display: "inline-block",
-                        }}
-                      >
-                        View Details
-                      </a>
-                      <a
-                        href={`/olympiad/${olympiad._id}/results`}
-                        className="button-primary"
-                        style={{
-                          textDecoration: "none",
-                          display: "inline-block",
-                        }}
-                      >
-                        View Results
-                      </a>
-                    </div>
-                  </div>
-                ))}
-                {olympiads.length === 0 && !olympiadsLoading && (
-                  <div className="empty-state">
-                    <div className="empty-icon">🏆</div>
-                    <h3>No olympiads yet</h3>
-                    <p>Create your first olympiad to get started.</p>
-                  </div>
-                )}
+                  )}
               </div>
             )}
           </>
@@ -861,9 +851,7 @@ const UniversityDashboard = () => {
                   className="filter-input"
                   placeholder="Search by name, title..."
                   value={filters.search || ""}
-                  onChange={(e) =>
-                    handleFilterChange("search", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange("search", e.target.value)}
                 />
               </div>
 
@@ -914,14 +902,18 @@ const UniversityDashboard = () => {
                 <label>View:</label>
                 <div className="view-mode-toggle">
                   <button
-                    className={`view-mode-button ${viewMode === "grid" ? "active" : ""}`}
+                    className={`view-mode-button ${
+                      viewMode === "grid" ? "active" : ""
+                    }`}
                     onClick={() => setViewMode("grid")}
                     title="Grid View"
                   >
                     ⬜
                   </button>
                   <button
-                    className={`view-mode-button ${viewMode === "table" ? "active" : ""}`}
+                    className={`view-mode-button ${
+                      viewMode === "table" ? "active" : ""
+                    }`}
                     onClick={() => setViewMode("table")}
                     title="Table View"
                   >
@@ -935,7 +927,10 @@ const UniversityDashboard = () => {
             <div className="resolter-results card">
               <div className="results-header">
                 <h2 className="results-title">
-                  Student Portfolios ({pagination.total !== undefined ? pagination.total : portfolios.length})
+                  Student Portfolios (
+                  {Number(pagination?.total) ||
+                    (Array.isArray(portfolios) ? portfolios.length : 0)}
+                  )
                 </h2>
               </div>
 
@@ -955,10 +950,12 @@ const UniversityDashboard = () => {
                 />
               )}
 
-              {pagination.pages > 1 && (
+              {(Number(pagination?.pages) || 1) > 1 && (
                 <Pagination
-                  currentPage={pagination.page || currentPage}
-                  totalPages={pagination.pages || 1}
+                  currentPage={
+                    Number(pagination?.page) || Number(currentPage) || 1
+                  }
+                  totalPages={Number(pagination?.pages) || 1}
                   onPageChange={setCurrentPage}
                 />
               )}

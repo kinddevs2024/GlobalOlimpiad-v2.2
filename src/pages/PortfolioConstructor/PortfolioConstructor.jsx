@@ -481,8 +481,6 @@ const PortfolioConstructor = () => {
         setLoading(true);
         const response = await portfolioAPI.getMyPortfolio();
 
-        console.log("Full API response:", response);
-        console.log("Response.data:", response?.data);
 
         // Handle nested response structure: { success: true, data: [...] } or { success: true, data: {...} }
         let portfolioData = null;
@@ -492,7 +490,6 @@ const PortfolioConstructor = () => {
             // Check if data is an array (multiple portfolios) or a single object
             if (Array.isArray(response.data.data)) {
               const portfolios = response.data.data;
-              console.log("Found array of portfolios:", portfolios.length);
               // Use the most recent portfolio (last in array, or sort by updatedAt)
               if (portfolios.length > 0) {
                 // Sort by updatedAt (most recent first) or use the last one
@@ -502,7 +499,6 @@ const PortfolioConstructor = () => {
                   return dateB - dateA;
                 });
                 portfolioData = sorted[0]; // Use most recently updated portfolio
-                console.log("Using most recent portfolio:", portfolioData.slug);
               }
             } else {
               // Single portfolio object
@@ -527,7 +523,6 @@ const PortfolioConstructor = () => {
           }
         }
 
-        console.log("Extracted portfolioData:", portfolioData);
 
         if (portfolioData) {
           // Normalize portfolio structure from backend format to frontend format
@@ -537,7 +532,6 @@ const PortfolioConstructor = () => {
           setSavedPortfolio(JSON.parse(JSON.stringify(normalizedPortfolio))); // Deep copy for comparison
         } else {
           // No portfolio exists, initialize new one
-          console.log("No portfolio found, initializing new one");
           const newPortfolio = initializePortfolio();
           setPortfolio(newPortfolio);
           setSavedPortfolio(JSON.parse(JSON.stringify(newPortfolio)));

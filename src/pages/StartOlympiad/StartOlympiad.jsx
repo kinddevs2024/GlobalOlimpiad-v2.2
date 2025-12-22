@@ -64,7 +64,7 @@ const StartOlympiad = () => {
         try {
           const resultsResponse = await olympiadAPI.getResults(id, user._id);
           if (resultsResponse.data.success && resultsResponse.data.results) {
-            const userResults = resultsResponse.data.results.filter(
+            const userResults = (resultsResponse.data.results || []).filter(
               (r) => r.userId === user._id
             );
             if (userResults.length > 0) {
@@ -98,7 +98,7 @@ const StartOlympiad = () => {
       }
     } catch (error) {
       setNotification({
-        message: error.response?.data?.message || "Failed to load olympiad",
+        message: error?.response?.data?.message || error?.message || "Unable to load olympiad. Please refresh the page.",
         type: "error",
       });
       setTimeout(() => navigate("/dashboard"), 2000);
@@ -113,13 +113,6 @@ const StartOlympiad = () => {
       e.preventDefault();
       e.stopPropagation();
     }
-
-    console.log("🚀 Start button clicked", {
-      hasOlympiad: !!olympiad,
-      consentGiven,
-      starting,
-      olympiadStatus: olympiad?.status,
-    });
 
     if (!olympiad) {
       console.error("❌ Olympiad data is missing");
@@ -163,14 +156,6 @@ const StartOlympiad = () => {
       );
       const isEndedCheck = isOlympiadEnded(olympiad.endTime);
 
-      console.log("📅 Time validation:", {
-        isUpcoming: isUpcomingCheck,
-        isActive: isActiveCheck,
-        isEnded: isEndedCheck,
-        startTime: olympiad.startTime,
-        endTime: olympiad.endTime,
-        currentTime: new Date().toISOString(),
-      });
 
       // Validate olympiad is active
       if (!isActiveCheck) {
@@ -194,7 +179,7 @@ const StartOlympiad = () => {
       }
 
       // Validate olympiad has questions
-      if (!olympiad.questions || olympiad.questions.length === 0) {
+      if (!Array.isArray(olympiad?.questions) || olympiad.questions.length === 0) {
         setNotification({
           message:
             "This olympiad has no questions yet. Please contact the administrator.",
@@ -214,7 +199,6 @@ const StartOlympiad = () => {
         return;
       }
 
-      console.log("✅ All validations passed, starting olympiad...");
 
       // Store start information in localStorage
       const startTime = new Date().toISOString();
@@ -235,14 +219,14 @@ const StartOlympiad = () => {
       const targetPath =
         olympiad.type === "essay" ? `/olympiad/${id}/essay` : `/olympiad/${id}`;
 
-      console.log("🧭 Navigating to:", targetPath);
       navigate(targetPath);
     } catch (error) {
       console.error("❌ Error starting olympiad:", error);
+      const errorMessage = error?.response?.data?.message || error?.message;
       setNotification({
-        message:
-          error.message ||
-          "Failed to start olympiad. Please try again or contact support.",
+        message: errorMessage 
+          ? `Unable to start olympiad: ${errorMessage}` 
+          : "Unable to start olympiad. Please check your connection and try again.",
         type: "error",
       });
       setStarting(false);
@@ -310,13 +294,13 @@ const StartOlympiad = () => {
               <div className="info-item">
                 <span className="info-label">Duration</span>
                 <span className="info-value">
-                  {Math.floor(olympiad.duration / 60)} minutes
+                  {olympiad?.duration ? Math.floor((Number(olympiad.duration) || 0) / 60) : 0} minutes
                 </span>
               </div>
               <div className="info-item">
                 <span className="info-label">Questions</span>
                 <span className="info-value">
-                  {olympiad.questions?.length || 0}
+                  {Array.isArray(olympiad?.questions) ? olympiad.questions.length : 0}
                 </span>
               </div>
             </div>
@@ -347,7 +331,7 @@ const StartOlympiad = () => {
                   Please complete your profile before starting an olympiad. Missing fields:
                 </p>
                 <ul style={{ marginTop: '12px', marginBottom: '16px', paddingLeft: '20px' }}>
-                  {missingFields.map((field, index) => (
+                  {(missingFields || []).map((field, index) => (
                     <li key={index} style={{ marginBottom: '4px' }}>{field}</li>
                   ))}
                 </ul>
@@ -430,7 +414,7 @@ const StartOlympiad = () => {
                     <div className="instruction-content">
                       <h4>Time Management</h4>
                       <p>
-                        You have {Math.floor(olympiad.duration / 60)} minutes to
+                        You have {olympiad?.duration ? Math.floor((Number(olympiad.duration) || 0) / 60) : 0} minutes to
                         complete this olympiad. The timer will start when you
                         click "Start Olympiad".
                       </p>

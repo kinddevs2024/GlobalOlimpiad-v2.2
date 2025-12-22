@@ -1,7 +1,8 @@
+import { memo } from "react";
 import PortfolioStatusBadge from "../PortfolioStatusBadge/PortfolioStatusBadge";
 import "./PortfolioTable.css";
 
-const PortfolioTable = ({
+const PortfolioTable = memo(({
   portfolios,
   onViewPortfolio,
   onUnlockContacts,
@@ -27,7 +28,7 @@ const PortfolioTable = ({
         <div className="table-cell">Actions</div>
       </div>
       <div className="table-body">
-        {portfolios.map((portfolio, index) => (
+        {(Array.isArray(portfolios) ? portfolios : []).map((portfolio, index) => (
           <div key={portfolio._id || index} className="table-row">
             <div className="table-cell">
               {portfolio.studentName || portfolio.studentId || "Unknown"}
@@ -91,7 +92,9 @@ const PortfolioTable = ({
       </div>
     </div>
   );
-};
+});
+
+PortfolioTable.displayName = "PortfolioTable";
 
 export default PortfolioTable;
 

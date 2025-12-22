@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { adminAPI, olympiadAPI } from "../../services/api";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { adminAPI } from "../../services/api";
 import NotificationToast from "../../components/NotificationToast";
 import { formatDate } from "../../utils/helpers";
 import "./AdminPanel.css";
@@ -29,8 +29,8 @@ const QuestionFormStep = ({
       if (!questionForm.question || !questionForm.correctAnswer) {
         return;
       }
-      const validOptions = questionForm.options.filter(
-        (opt) => opt.trim() !== ""
+      const validOptions = (Array.isArray(questionForm.options) ? questionForm.options : []).filter(
+        (opt) => opt && String(opt).trim() !== ""
       );
       if (validOptions.length < 2) {
         return;
@@ -41,7 +41,7 @@ const QuestionFormStep = ({
         type: "multiple-choice",
         options: validOptions,
         correctAnswer: questionForm.correctAnswer,
-        points: questionForm.points,
+        points: Number(questionForm.points) || 10,
       });
     } else {
       // Essay question
@@ -52,7 +52,7 @@ const QuestionFormStep = ({
       onAddQuestion({
         question: questionForm.question,
         type: "essay",
-        points: questionForm.points,
+        points: Number(questionForm.points) || 10,
       });
     }
 
@@ -83,17 +83,17 @@ const QuestionFormStep = ({
       {/* Questions List */}
       {questions.length > 0 && (
         <div className="questions-list">
-          <h3>Added Questions ({questions.length})</h3>
-          {questions.map((q, index) => (
+          <h3>Added Questions ({(questions || []).length})</h3>
+          {(questions || []).map((q, index) => (
             <div key={q._id || index} className="question-item card">
               <div className="question-header">
                 <span className="question-number">Q{index + 1}</span>
-                <span className="question-points">{q.points} pts</span>
+                <span className="question-points">{Number(q?.points) || 0} pts</span>
               </div>
-              <p className="question-text">{q.question}</p>
-              {q.type === "multiple-choice" && q.options && (
+              <p className="question-text">{q.question || "No question text"}</p>
+              {q.type === "multiple-choice" && q.options && q.options.length > 0 && (
                 <div className="question-options">
-                  {q.options.map((opt, optIndex) => (
+                  {(q.options || []).map((opt, optIndex) => (
                     <div
                       key={optIndex}
                       className={`option ${
@@ -129,7 +129,7 @@ const QuestionFormStep = ({
           <>
             <div className="form-group">
               <label>Options</label>
-              {questionForm.options.map((option, index) => (
+              {(questionForm.options || []).map((option, index) => (
                 <div key={index} className="option-input-row">
                   <span className="option-label">
                     {String.fromCharCode(65 + index)}.
@@ -170,7 +170,7 @@ const QuestionFormStep = ({
               onChange={(e) =>
                 setQuestionForm({
                   ...questionForm,
-                  points: parseInt(e.target.value) || 10,
+                        points: Number(e.target.value) || 10,
                 })
               }
               min="1"
@@ -224,30 +224,31 @@ const AdminPanel = () => {
 
   const [questions, setQuestions] = useState([]);
 
-  useEffect(() => {
-    fetchOlympiads();
-  }, []);
-
-  const fetchOlympiads = async () => {
+  const fetchOlympiads = useCallback(async () => {
     try {
       // Use admin endpoint to get all olympiads (including drafts)
       const response = await adminAPI.getAllOlympiads();
-      setOlympiads(response.data);
+      const olympiadsData = response.data?.data || response.data || [];
+      setOlympiads(Array.isArray(olympiadsData) ? olympiadsData : []);
     } catch (error) {
       setNotification({ message: "Failed to load olympiads", type: "error" });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchOlympiads();
+  }, [fetchOlympiads]);
 
   // Step 1: Select type
-  const handleTypeSelect = (type) => {
-    setFormData({ ...formData, type });
+  const handleTypeSelect = useCallback((type) => {
+    setFormData((prev) => ({ ...prev, type }));
     setCurrentStep(2);
-  };
+  }, []);
 
   // Step 2: Create olympiad with basic info
-  const handleCreateOlympiad = async (e) => {
+  const handleCreateOlympiad = useCallback(async (e) => {
     e.preventDefault();
 
     // Validate required fields
@@ -291,13 +292,12 @@ const AdminPanel = () => {
         subject: formData.subject,
         startTime: formatDateTime(formData.startTime),
         endTime: formatDateTime(formData.endTime),
-        duration: formData.duration * 60, // Convert minutes to seconds
+        duration: (Number(formData.duration) || 60) * 60, // Convert minutes to seconds
         status: formData.status,
       };
 
       // Create olympiad first
       const response = await adminAPI.createOlympiad(olympiadData);
-      console.log("Create olympiad response:", response.data);
 
       // Try multiple possible response structures
       const newOlympiadId =
@@ -307,7 +307,6 @@ const AdminPanel = () => {
         response.data?.olympiad?.id;
 
       if (!newOlympiadId) {
-        console.error("No olympiad ID in response:", response.data);
         setNotification({
           message:
             "Olympiad created but ID not received. Please refresh and try again.",
@@ -320,12 +319,10 @@ const AdminPanel = () => {
       // Now upload logo if one was selected, using the newly created olympiad ID
       if (formData.olympiadLogo) {
         try {
-          console.log("Uploading logo for olympiad:", newOlympiadId);
-          const logoResponse = await adminAPI.uploadOlympiadLogo(
+          await adminAPI.uploadOlympiadLogo(
             formData.olympiadLogo,
             newOlympiadId
           );
-          console.log("Logo upload response:", logoResponse.data);
 
           // Logo should now be associated with the olympiad via backend
           setNotification({
@@ -360,16 +357,16 @@ const AdminPanel = () => {
     } catch (error) {
       console.error("Error creating olympiad:", error);
       setNotification({
-        message: error.response?.data?.message || "Failed to create olympiad",
+        message: error?.response?.data?.message || error?.message || "Unable to create olympiad. Please check all fields and try again.",
         type: "error",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, fetchOlympiads]);
 
   // Step 3: Add question
-  const handleAddQuestion = async (questionData) => {
+  const handleAddQuestion = useCallback(async (questionData) => {
     try {
       // Validate that olympiad was created successfully
       if (!createdOlympiadId) {
@@ -383,11 +380,11 @@ const AdminPanel = () => {
       const questionPayload = {
         olympiadId: createdOlympiadId,
         ...questionData,
-        order: questions.length + 1,
+        order: (Array.isArray(questions) ? questions.length : 0) + 1,
       };
 
       const response = await adminAPI.addQuestion(questionPayload);
-      setQuestions([...questions, response.data]);
+      setQuestions((prev) => [...prev, response.data]);
       setNotification({
         message: "Question added successfully!",
         type: "success",
@@ -398,10 +395,10 @@ const AdminPanel = () => {
         type: "error",
       });
     }
-  };
+  }, [createdOlympiadId, questions]);
 
   // Finish and close
-  const handleFinish = () => {
+  const handleFinish = useCallback(() => {
     setShowCreateForm(false);
     setCurrentStep(1);
     setCreatedOlympiadId(null);
@@ -422,10 +419,10 @@ const AdminPanel = () => {
       message: "Olympiad created successfully with questions!",
       type: "success",
     });
-  };
+  }, [fetchOlympiads]);
 
   // Reset form
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setShowCreateForm(false);
     setCurrentStep(1);
     setCreatedOlympiadId(null);
@@ -442,10 +439,10 @@ const AdminPanel = () => {
       status: "draft",
       olympiadLogo: null,
     });
-  };
+  }, []);
 
   // Load olympiad for editing
-  const handleEdit = async (olympiad) => {
+  const handleEdit = useCallback(async (olympiad) => {
     try {
       const response = await adminAPI.getOlympiadById(olympiad._id);
       const olympiadData = response.data.data || response.data;
@@ -470,7 +467,7 @@ const AdminPanel = () => {
         type: olympiadData.type || "test",
         startTime: formatToLocalDateTime(olympiadData.startTime),
         endTime: formatToLocalDateTime(olympiadData.endTime),
-        duration: Math.floor((olympiadData.duration || 3600) / 60), // Convert seconds to minutes
+        duration: Math.floor((Number(olympiadData?.duration) || 3600) / 60), // Convert seconds to minutes
         status: olympiadData.status || "draft",
         olympiadLogo: null, // Logo will be loaded from backend URL if exists
       });
@@ -479,10 +476,10 @@ const AdminPanel = () => {
     } catch (error) {
       setNotification({ message: "Failed to load olympiad", type: "error" });
     }
-  };
+  }, []);
 
   // Update olympiad
-  const handleUpdateOlympiad = async (e) => {
+  const handleUpdateOlympiad = useCallback(async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -499,7 +496,7 @@ const AdminPanel = () => {
         subject: formData.subject,
         startTime: formatDateTime(formData.startTime),
         endTime: formatDateTime(formData.endTime),
-        duration: formData.duration * 60,
+        duration: (Number(formData.duration) || 60) * 60,
         status: formData.status,
       };
 
@@ -517,12 +514,10 @@ const AdminPanel = () => {
       // Then upload new logo if one was selected
       if (formData.olympiadLogo && formData.olympiadLogo instanceof File) {
         try {
-          console.log("Uploading logo for olympiad:", editingOlympiad);
-          const logoResponse = await adminAPI.uploadOlympiadLogo(
+          await adminAPI.uploadOlympiadLogo(
             formData.olympiadLogo,
             editingOlympiad
           );
-          console.log("Logo upload response:", logoResponse.data);
 
           setNotification({
             message: "Olympiad updated and logo uploaded successfully",
@@ -566,13 +561,13 @@ const AdminPanel = () => {
       fetchOlympiads();
     } catch (error) {
       setNotification({
-        message: error.response?.data?.message || "Failed to update olympiad",
+        message: error?.response?.data?.message || error?.message || "Unable to update olympiad. Please try again.",
         type: "error",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, editingOlympiad, fetchOlympiads]);
 
   // Open question manager
   const handleManageQuestions = async (olympiad) => {
@@ -595,26 +590,27 @@ const AdminPanel = () => {
       fetchOlympiads();
     } catch (error) {
       setNotification({
-        message: error.response?.data?.message || "Failed to update status",
+        message: error?.response?.data?.message || error?.message || "Unable to update status. Please try again.",
         type: "error",
       });
     }
   };
 
   // Filter olympiads by status
-  const getFilteredOlympiads = () => {
+  const getFilteredOlympiads = useMemo(() => {
+    if (!Array.isArray(olympiads)) return [];
     if (statusFilter === "all") return olympiads;
-    return olympiads.filter((olympiad) => {
+    return (Array.isArray(olympiads) ? olympiads : []).filter((olympiad) => {
       if (statusFilter === "published") return olympiad.status === "published";
       if (statusFilter === "unpublished")
         return olympiad.status === "unpublished";
       if (statusFilter === "draft") return olympiad.status === "draft";
       return true;
     });
-  };
+  }, [olympiads, statusFilter]);
 
   // Get status badge
-  const getStatusBadge = (status) => {
+  const getStatusBadge = useCallback((status) => {
     const statusMap = {
       published: { label: "Published", class: "status-published" },
       unpublished: { label: "Unpublished", class: "status-unpublished" },
@@ -626,9 +622,9 @@ const AdminPanel = () => {
         {statusInfo.label}
       </span>
     );
-  };
+  }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (window.confirm("Are you sure you want to delete this olympiad?")) {
       try {
         await adminAPI.deleteOlympiad(id);
@@ -644,7 +640,7 @@ const AdminPanel = () => {
         });
       }
     }
-  };
+  }, [fetchOlympiads]);
 
   if (loading) {
     return (
@@ -909,7 +905,7 @@ const AdminPanel = () => {
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            duration: parseInt(e.target.value) || 60,
+                            duration: Number(e.target.value) || 60,
                           })
                         }
                         required
@@ -917,7 +913,7 @@ const AdminPanel = () => {
                         placeholder="60"
                       />
                       <small style={{ color: "#888", fontSize: "12px" }}>
-                        Will be converted to seconds ({formData.duration * 60}s)
+                        Will be converted to seconds ({(Number(formData.duration) || 60) * 60}s)
                       </small>
                     </div>
                     <div className="form-group">
@@ -1001,7 +997,7 @@ const AdminPanel = () => {
                                 subject: formData.subject,
                                 startTime: formatDateTime(formData.startTime),
                                 endTime: formatDateTime(formData.endTime),
-                                duration: formData.duration * 60,
+                                duration: (Number(formData.duration) || 60) * 60,
                                 status: formData.status,
                               };
                               await adminAPI.updateOlympiad(
@@ -1057,7 +1053,7 @@ const AdminPanel = () => {
         )}
 
         <div className="admin-olympiads">
-          {getFilteredOlympiads().map((olympiad) => {
+          {getFilteredOlympiads.map((olympiad) => {
             // Get logo URL - handle both relative and absolute URLs
             // Check multiple possible field names for logo
             const logoField =
@@ -1086,15 +1082,6 @@ const AdminPanel = () => {
             };
 
             const logoUrl = getLogoUrl(logoField);
-
-            // Debug: Log olympiad data to see what fields are available
-            console.log("Olympiad data:", {
-              title: olympiad.title,
-              hasLogoField: !!logoField,
-              logoField: logoField,
-              logoUrl: logoUrl,
-              allFields: Object.keys(olympiad),
-            });
 
             return (
               <div key={olympiad._id} className="admin-olympiad-card card">
@@ -1239,8 +1226,8 @@ const QuestionManager = ({ olympiad, onClose }) => {
           });
           return;
         }
-        const validOptions = questionForm.options.filter(
-          (opt) => opt.trim() !== ""
+        const validOptions = (Array.isArray(questionForm.options) ? questionForm.options : []).filter(
+          (opt) => opt && String(opt).trim() !== ""
         );
         if (validOptions.length < 2) {
           setNotification({
@@ -1256,8 +1243,8 @@ const QuestionManager = ({ olympiad, onClose }) => {
           type: "multiple-choice",
           options: validOptions,
           correctAnswer: questionForm.correctAnswer,
-          points: questionForm.points,
-          order: questions.length + 1,
+          points: Number(questionForm.points) || 10,
+          order: (Array.isArray(questions) ? questions.length : 0) + 1,
         });
       } else {
         if (!questionForm.question) {
@@ -1272,8 +1259,8 @@ const QuestionManager = ({ olympiad, onClose }) => {
           olympiadId: olympiad._id,
           question: questionForm.question,
           type: "essay",
-          points: questionForm.points,
-          order: questions.length + 1,
+          points: Number(questionForm.points) || 10,
+          order: (Array.isArray(questions) ? questions.length : 0) + 1,
         });
       }
 
@@ -1329,7 +1316,7 @@ const QuestionManager = ({ olympiad, onClose }) => {
 
         <div className="modal-body">
           <div className="questions-header">
-            <h3>Questions ({questions.length})</h3>
+            <h3>Questions ({Array.isArray(questions) ? questions.length : 0})</h3>
             <button
               className="button-primary"
               onClick={() => setShowAddForm(!showAddForm)}
@@ -1359,7 +1346,7 @@ const QuestionManager = ({ olympiad, onClose }) => {
               {olympiad.type === "test" && (
                 <div className="form-group">
                   <label>Options</label>
-                  {questionForm.options.map((option, index) => (
+                  {(questionForm.options || []).map((option, index) => (
                     <div key={index} className="option-input-row">
                       <span className="option-label">
                         {String.fromCharCode(65 + index)}.
@@ -1403,7 +1390,7 @@ const QuestionManager = ({ olympiad, onClose }) => {
                     onChange={(e) =>
                       setQuestionForm({
                         ...questionForm,
-                        points: parseInt(e.target.value) || 10,
+                        points: Number(e.target.value) || 10,
                       })
                     }
                     min="1"
@@ -1419,19 +1406,19 @@ const QuestionManager = ({ olympiad, onClose }) => {
           )}
 
           <div className="questions-list">
-            {questions.length === 0 ? (
+            {!Array.isArray(questions) || questions.length === 0 ? (
               <div className="empty-state">
                 <p>No questions yet. Add your first question!</p>
               </div>
             ) : (
-              questions.map((q, index) => (
-                <div key={q._id || index} className="question-item card">
+              (Array.isArray(questions) ? questions : []).map((q, index) => (
+                <div key={q?._id || index} className="question-item card">
                   <div className="question-header">
                     <span className="question-number">Q{index + 1}</span>
-                    <span className="question-points">{q.points} pts</span>
+                    <span className="question-points">{Number(q?.points) || 0} pts</span>
                   </div>
-                  <p className="question-text">{q.question}</p>
-                  {q.type === "multiple-choice" && q.options && (
+                  <p className="question-text">{q?.question || "No question text"}</p>
+                  {q?.type === "multiple-choice" && Array.isArray(q?.options) && q.options.length > 0 && (
                     <div className="question-options">
                       {q.options.map((opt, optIndex) => (
                         <div

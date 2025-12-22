@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { formatDate } from "../../utils/helpers";
@@ -11,8 +11,8 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="profile-page">
-        <div className="container">
+      <div className="profile-page page-container">
+        <div>
           <div className="profile-loading">
             <div className="loading-spinner"></div>
           </div>
@@ -22,8 +22,8 @@ const Profile = () => {
   }
 
   return (
-    <div className="profile-page">
-      <div className="container">
+    <div className="profile-page page-container">
+      <div>
         <div className="profile-header">
           <h1 className="profile-title text-glow">My Profile</h1>
           <div className="profile-actions">

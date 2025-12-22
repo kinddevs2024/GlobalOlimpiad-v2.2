@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { olympiadAPI, adminAPI } from "../../services/api";
 import {
@@ -7,7 +7,7 @@ import {
   isOlympiadUpcoming,
   isOlympiadEnded,
 } from "../../utils/helpers";
-import { OLYMPIAD_TYPES, USER_ROLES } from "../../utils/constants";
+import { USER_ROLES } from "../../utils/constants";
 import { useAuth } from "../../context/AuthContext";
 import "./Dashboard.css";
 
@@ -28,71 +28,68 @@ const Dashboard = () => {
   // Students default to seeing active olympiads (null = active), admins/owners see all
   const [filter, setFilter] = useState(isAdminOrOwner ? "all" : null);
 
-  useEffect(() => {
-    fetchOlympiads();
-  }, []);
-
-  const fetchOlympiads = async () => {
+  const fetchOlympiads = useCallback(async () => {
     try {
       let response;
       if (isAdminOrOwner) {
-        // Admins and owners should see ALL olympiads (including drafts, unpublished, etc.)
         response = await adminAPI.getAllOlympiads();
       } else {
-        // Students only see published olympiads
         response = await olympiadAPI.getAll();
       }
-      setOlympiads(response.data);
+      // Handle paginated response structure: { success: true, data: [...], pagination: {...} }
+      // or legacy array response
+      const olympiadsData = response.data?.data || response.data || [];
+      setOlympiads(Array.isArray(olympiadsData) ? olympiadsData : []);
     } catch (error) {
       console.error("Error fetching olympiads:", error);
+      setOlympiads([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdminOrOwner]);
 
-  // Get olympiads by status
-  const getVisibleOlympiads = () => {
+  useEffect(() => {
+    fetchOlympiads();
+  }, [fetchOlympiads]);
+
+  // Get olympiads by status - memoized
+  const getVisibleOlympiads = useMemo(() => {
+    if (!Array.isArray(olympiads)) return [];
     if (isAdminOrOwner) {
-      // Admins and owners see ALL olympiads without any filtering
       return olympiads;
     } else {
-      // Students only see published olympiads
       return olympiads.filter((olympiad) => olympiad.status === "published");
     }
-  };
+  }, [olympiads, isAdminOrOwner]);
 
-  const getActiveOlympiads = () => {
-    return getVisibleOlympiads().filter((olympiad) =>
+  const getActiveOlympiads = useMemo(() => {
+    return getVisibleOlympiads.filter((olympiad) =>
       isOlympiadActive(olympiad.startTime, olympiad.endTime)
     );
-  };
+  }, [getVisibleOlympiads]);
 
-  const getUpcomingOlympiads = () => {
-    return getVisibleOlympiads().filter((olympiad) =>
+  const getUpcomingOlympiads = useMemo(() => {
+    return getVisibleOlympiads.filter((olympiad) =>
       isOlympiadUpcoming(olympiad.startTime)
     );
-  };
+  }, [getVisibleOlympiads]);
 
-  const getEndedOlympiads = () => {
-    return getVisibleOlympiads().filter((olympiad) =>
+  const getEndedOlympiads = useMemo(() => {
+    return getVisibleOlympiads.filter((olympiad) =>
       isOlympiadEnded(olympiad.endTime)
     );
-  };
+  }, [getVisibleOlympiads]);
 
-  const getFilteredOlympiads = () => {
-    const visibleOlympiads = getVisibleOlympiads();
+  const getFilteredOlympiads = useMemo(() => {
+    if (filter === "all") return getVisibleOlympiads;
+    if (filter === "active") return getActiveOlympiads;
+    if (filter === "upcoming") return getUpcomingOlympiads;
+    if (filter === "ended") return getEndedOlympiads;
+    return getVisibleOlympiads;
+  }, [filter, getVisibleOlympiads, getActiveOlympiads, getUpcomingOlympiads, getEndedOlympiads]);
 
-    // Apply filter for admins/owners
-    if (filter === "all") return visibleOlympiads;
-    if (filter === "active") return getActiveOlympiads();
-    if (filter === "upcoming") return getUpcomingOlympiads();
-    if (filter === "ended") return getEndedOlympiads();
-
-    return visibleOlympiads;
-  };
-
-  // Get time-based status badge (Active, Upcoming, Ended)
-  const getTimeStatusBadge = (olympiad) => {
+  // Get time-based status badge (Active, Upcoming, Ended) - memoized
+  const getTimeStatusBadge = useCallback((olympiad) => {
     if (isOlympiadActive(olympiad.startTime, olympiad.endTime)) {
       return <span className="status-badge status-active">Active</span>;
     }
@@ -100,10 +97,10 @@ const Dashboard = () => {
       return <span className="status-badge status-upcoming">Upcoming</span>;
     }
     return <span className="status-badge status-ended">Ended</span>;
-  };
+  }, []);
 
-  // Get olympiad status badge (Draft, Published, Unpublished) - for admins/owners
-  const getOlympiadStatusBadge = (status) => {
+  // Get olympiad status badge (Draft, Published, Unpublished) - for admins/owners - memoized
+  const getOlympiadStatusBadge = useCallback((status) => {
     if (!isAdminOrOwner) return null;
 
     const statusMap = {
@@ -117,18 +114,10 @@ const Dashboard = () => {
         {statusInfo.label}
       </span>
     );
-  };
+  }, [isAdminOrOwner]);
 
-  if (loading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="loading-spinner"></div>
-      </div>
-    );
-  }
-
-  // Handle olympiad click - open modal for admins/owners, navigate for students
-  const handleOlympiadClick = async (olympiad) => {
+  // Handle olympiad click - open modal for admins/owners, navigate for students - memoized
+  const handleOlympiadClick = useCallback(async (olympiad) => {
     if (isAdminOrOwner) {
       setSelectedOlympiad(olympiad);
       setLoadingDetails(true);
@@ -148,16 +137,18 @@ const Dashboard = () => {
         setLoadingDetails(false);
       }
     }
-  };
+  }, [isAdminOrOwner]);
 
-  // Close modal
-  const handleCloseModal = () => {
+  // Close modal - memoized
+  const handleCloseModal = useCallback(() => {
     setSelectedOlympiad(null);
     setOlympiadDetails(null);
-  };
+  }, []);
 
   // Render olympiad card component
-  const renderOlympiadCard = (olympiad) => {
+  const renderOlympiadCard = useCallback((olympiad) => {
+    if (!olympiad) return null;
+    
     // Get logo URL - handle both relative and absolute URLs
     // Check multiple possible field names for logo
     const logoField =
@@ -234,7 +225,7 @@ const Dashboard = () => {
           <div className="olympiad-meta-item">
             <span className="meta-label">Duration:</span>
             <span className="meta-value">
-              {Math.floor(olympiad.duration / 60)} minutes
+              {olympiad?.duration ? Math.floor((Number(olympiad.duration) || 0) / 60) : 0} minutes
             </span>
           </div>
         </div>
@@ -288,10 +279,10 @@ const Dashboard = () => {
         {cardContent}
       </div>
     );
-  };
+  }, [isAdminOrOwner, isStudent, getOlympiadStatusBadge, getTimeStatusBadge, handleOlympiadClick]);
 
   // Render section with olympiads
-  const renderOlympiadSection = (
+  const renderOlympiadSection = useCallback((
     title,
     subtitle,
     olympiadsList,
@@ -308,20 +299,28 @@ const Dashboard = () => {
           <p className="section-subtitle">{subtitle}</p>
         </div>
         <div className="olympiads-grid">
-          {olympiadsList.map((olympiad) => renderOlympiadCard(olympiad))}
+          {(olympiadsList || []).map((olympiad) => renderOlympiadCard(olympiad))}
         </div>
       </div>
     );
-  };
+  }, [renderOlympiadCard]);
 
-  const filteredOlympiads = getFilteredOlympiads();
-  const activeOlympiads = getActiveOlympiads();
-  const upcomingOlympiads = getUpcomingOlympiads();
-  const endedOlympiads = getEndedOlympiads();
+  const filteredOlympiads = getFilteredOlympiads;
+  const activeOlympiads = getActiveOlympiads;
+  const upcomingOlympiads = getUpcomingOlympiads;
+  const endedOlympiads = getEndedOlympiads;
+
+  if (loading) {
+    return (
+      <div className="dashboard-loading">
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard-page">
-      <div className="container">
+    <div className="dashboard-page page-container">
+      <div>
         <div className="dashboard-header">
           <h1 className="dashboard-title text-glow">Olympiad Dashboard</h1>
           <p className="dashboard-subtitle">
@@ -392,7 +391,7 @@ const Dashboard = () => {
                   );
                 }
 
-                return displayOlympiads.map((olympiad) =>
+                return (displayOlympiads || []).map((olympiad) =>
                   renderOlympiadCard(olympiad)
                 );
               })()}
@@ -537,7 +536,7 @@ const Dashboard = () => {
                       <div className="info-item">
                         <span className="info-label">Duration:</span>
                         <span className="info-value">
-                          {Math.floor(selectedOlympiad.duration / 60)} minutes
+                          {selectedOlympiad?.duration ? Math.floor((Number(selectedOlympiad.duration) || 0) / 60) : 0} minutes
                         </span>
                       </div>
                       <div className="info-item">
@@ -579,7 +578,7 @@ const Dashboard = () => {
                   </div>
 
                   {/* Questions */}
-                  {olympiadDetails?.questions && (
+                  {olympiadDetails?.questions && Array.isArray(olympiadDetails.questions) && (
                     <div className="modal-section">
                       <h3 className="section-title">
                         ❓ Questions ({olympiadDetails.questions.length})
@@ -591,17 +590,17 @@ const Dashboard = () => {
                               .slice(0, 5)
                               .map((q, index) => (
                                 <div
-                                  key={q._id || index}
+                                  key={q?._id || index}
                                   className="question-preview-item"
                                 >
                                   <span className="question-number">
                                     Q{index + 1}
                                   </span>
                                   <span className="question-text">
-                                    {q.question || q.questionText}
+                                    {q?.question || q?.questionText || ""}
                                   </span>
                                   <span className="question-points">
-                                    {q.points} pts
+                                    {Number(q?.points) || 0} pts
                                   </span>
                                 </div>
                               ))}

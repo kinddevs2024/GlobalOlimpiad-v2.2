@@ -1,22 +1,23 @@
-import { useMemo } from "react";
+import { useMemo, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import PortfolioThemeProvider from "./ThemeProvider";
 import PortfolioHeader from "./PortfolioHeader";
 import HeroSection from "./sections/HeroSection";
-import AboutSection from "./sections/AboutSection";
-import SkillsSection from "./sections/SkillsSection";
-import AchievementsSection from "./sections/AchievementsSection";
-import ProjectsSection from "./sections/ProjectsSection";
-import CertificatesSection from "./sections/CertificatesSection";
-import InterestsSection from "./sections/InterestsSection";
-import EducationSection from "./sections/EducationSection";
-import CustomSection from "./sections/CustomSection";
 import EditableSectionWrapper from "../PortfolioEditor/EditableSectionWrapper";
 import DraggableSection from "../PortfolioEditor/DraggableSection";
 import PortfolioStatusBadge from "../PortfolioStatusBadge/PortfolioStatusBadge";
 import { usePortfolioEditor } from "../../hooks/usePortfolioEditor";
 import { useState } from "react";
 import "../../styles/portfolio.css";
+
+const AboutSection = lazy(() => import("./sections/AboutSection"));
+const SkillsSection = lazy(() => import("./sections/SkillsSection"));
+const AchievementsSection = lazy(() => import("./sections/AchievementsSection"));
+const ProjectsSection = lazy(() => import("./sections/ProjectsSection"));
+const CertificatesSection = lazy(() => import("./sections/CertificatesSection"));
+const InterestsSection = lazy(() => import("./sections/InterestsSection"));
+const EducationSection = lazy(() => import("./sections/EducationSection"));
+const CustomSection = lazy(() => import("./sections/CustomSection"));
 
 const SECTION_COMPONENTS = {
   hero: HeroSection,
@@ -151,8 +152,6 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
   const containerClass = `${layout === "multi-page" ? "portfolio-multi-page" : "portfolio-single-page"} ${isOwner ? "portfolio-editor-mode" : ""}`;
   const containerWidth = displayPortfolio?.theme?.containerWidth || "medium";
 
-  // Debug logging removed for production
-
   // Check if we have any content to render
   const displayHero = displayPortfolio?.hero || hero;
   const hasHeroContent = displayHero && (displayHero.title || displayHero.subtitle || displayHero.image);
@@ -234,23 +233,24 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
             const SectionComponent = SECTION_COMPONENTS[section.type];
             
             if (!SectionComponent) {
-              console.warn(`Unknown section type: ${section.type}`);
               return null;
             }
 
             const sectionElement = (
-              <SectionComponent
-                data={section.content || {}}
-                title={section.title}
-                style={section.style || {}}
-                isOwner={isOwner}
-                section={section}
-                portfolio={displayPortfolio}
-              />
+              <Suspense fallback={<div style={{ minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />}>
+                <SectionComponent
+                  data={section.content || {}}
+                  title={section.title}
+                  style={section.style || {}}
+                  isOwner={isOwner}
+                  section={section}
+                  portfolio={displayPortfolio}
+                />
+              </Suspense>
             );
 
             const animationDelay = displayPortfolio?.animations?.enabled 
-              ? index * 0.08 
+              ? index * 0.05 
               : 0;
             const shouldAnimate = displayPortfolio?.animations?.enabled;
 

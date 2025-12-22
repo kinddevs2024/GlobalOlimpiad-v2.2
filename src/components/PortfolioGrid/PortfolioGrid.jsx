@@ -1,7 +1,8 @@
+import { memo } from "react";
 import PortfolioStatusBadge from "../PortfolioStatusBadge/PortfolioStatusBadge";
 import "./PortfolioGrid.css";
 
-const PortfolioGrid = ({
+const PortfolioGrid = memo(({
   portfolios,
   onViewPortfolio,
   onUnlockContacts,
@@ -23,7 +24,7 @@ const PortfolioGrid = ({
 
   return (
     <div className="portfolio-grid">
-      {portfolios.map((portfolio, index) => (
+      {(Array.isArray(portfolios) ? portfolios : []).map((portfolio, index) => (
         <div key={portfolio._id || index} className="portfolio-card">
           {/* Card Header */}
           <div className="portfolio-card-header">
@@ -101,7 +102,9 @@ const PortfolioGrid = ({
       ))}
     </div>
   );
-};
+});
+
+PortfolioGrid.displayName = "PortfolioGrid";
 
 export default PortfolioGrid;
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import PortfolioRenderer from "../../components/Portfolio/PortfolioRenderer";
 import { portfolioAPI } from "../../services/portfolioAPI";
@@ -43,6 +43,9 @@ const normalizePortfolioFromBackend = (backendPortfolio) => {
   // Normalize sections: backend has { type, title, content/items, order } -> frontend needs { id, type, enabled, order, title, content }
   if (normalized.sections && Array.isArray(normalized.sections)) {
     normalized.sections = normalized.sections.map((section, index) => {
+      if (!section || typeof section !== 'object') {
+        return null;
+      }
       const normalizedSection = {
         id: section.id || `${section.type}-${index + 1}`,
         type: section.type,
@@ -75,27 +78,29 @@ const normalizePortfolioFromBackend = (backendPortfolio) => {
       }
       
       return normalizedSection;
-    });
+    }).filter(section => section !== null);
   } else {
     normalized.sections = [];
   }
   
   // Handle certificates array - merge into sections if certificates section doesn't exist
   if (normalized.certificates && Array.isArray(normalized.certificates) && normalized.certificates.length > 0) {
-    const hasCertificatesSection = normalized.sections.some(s => s.type === 'certificates');
+    const sectionsArray = Array.isArray(normalized.sections) ? normalized.sections : [];
+    const hasCertificatesSection = sectionsArray.some(s => s && s.type === 'certificates');
     if (!hasCertificatesSection) {
-      normalized.sections.push({
+      sectionsArray.push({
         id: 'certificates-1',
         type: 'certificates',
         enabled: true,
-        order: normalized.sections.length,
+        order: sectionsArray.length,
         title: 'Certificates',
         content: { certificates: normalized.certificates },
       });
+      normalized.sections = sectionsArray;
     } else {
-      const certSection = normalized.sections.find(s => s.type === 'certificates');
-      if (certSection && (!certSection.content?.certificates || certSection.content.certificates.length === 0)) {
-        certSection.content = { certificates: normalized.certificates };
+      const certSection = sectionsArray.find(s => s && s.type === 'certificates');
+      if (certSection && (!certSection.content?.certificates || !Array.isArray(certSection.content.certificates) || certSection.content.certificates.length === 0)) {
+        certSection.content = { certificates: Array.isArray(normalized.certificates) ? normalized.certificates : [] };
       }
     }
   }
@@ -152,7 +157,7 @@ const PortfolioView = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   // Check if current user is the portfolio owner
-  const isOwner = user && portfolio && user._id === portfolio.studentId;
+  const isOwner = user && portfolio && user?._id === portfolio?.studentId;
   
   // Apply portfolio's theme to body when portfolio loads
   // Portfolio theme is different from user's Settings theme
@@ -169,80 +174,78 @@ const PortfolioView = () => {
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
     };
-  }, [portfolio]);
+  }, [portfolio?.theme]);
 
-  // Debug logging removed
+  const fetchPortfolio = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await portfolioAPI.getPortfolioBySlug(slug);
+      
+      // Handle nested response structure: { success: true, data: {...} }
+      let portfolioData = null;
+      if (response && response.data) {
+        // Check for nested structure first: { success: true, data: {...} }
+        if (response.data.success !== undefined && response.data.data) {
+          portfolioData = response.data.data;
+        } 
+        // Check if response.data itself is the portfolio (has _id or slug)
+        else if (response.data._id || response.data.slug) {
+          portfolioData = response.data;
+        }
+        // If response.data has a data property, try that
+        else if (response.data.data) {
+          portfolioData = response.data.data;
+        }
+      }
+
+      if (portfolioData) {
+        // Normalize portfolio structure from backend format to frontend format
+        const normalizedPortfolio = normalizePortfolioFromBackend(portfolioData);
+        setPortfolio(normalizedPortfolio);
+      } else {
+        setError("Portfolio not found.");
+      }
+    } catch (err) {
+      console.error("Error fetching portfolio:", err);
+      // Handle network errors vs API errors
+      if (err.code === "ERR_NETWORK" || err.message?.includes("Network")) {
+        setError("Cannot connect to server. Please make sure the backend is running.");
+      } else {
+        // Backend handles privacy - if portfolio is private, backend will return error message
+        // Check for common private portfolio messages
+        const errorMessage = err.response?.data?.message || 
+                            err.response?.data?.error ||
+                            "Portfolio not found or is unavailable.";
+        
+        // If backend says portfolio is private, show that message
+        if (errorMessage.toLowerCase().includes("private") || 
+            err.response?.status === 403) {
+          setError(errorMessage);
+        } else {
+          setError(errorMessage);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
 
   useEffect(() => {
-    const fetchPortfolio = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await portfolioAPI.getPortfolioBySlug(slug);
-        
-        // Handle nested response structure: { success: true, data: {...} }
-        let portfolioData = null;
-        if (response && response.data) {
-          // Check for nested structure first: { success: true, data: {...} }
-          if (response.data.success !== undefined && response.data.data) {
-            portfolioData = response.data.data;
-          } 
-          // Check if response.data itself is the portfolio (has _id or slug)
-          else if (response.data._id || response.data.slug) {
-            portfolioData = response.data;
-          }
-          // If response.data has a data property, try that
-          else if (response.data.data) {
-            portfolioData = response.data.data;
-          }
-        }
-
-        if (portfolioData) {
-          // Normalize portfolio structure from backend format to frontend format
-          const normalizedPortfolio = normalizePortfolioFromBackend(portfolioData);
-          setPortfolio(normalizedPortfolio);
-        } else {
-          setError("Portfolio not found.");
-        }
-      } catch (err) {
-        console.error("Error fetching portfolio:", err);
-        // Handle network errors vs API errors
-        if (err.code === "ERR_NETWORK" || err.message?.includes("Network")) {
-          setError("Cannot connect to server. Please make sure the backend is running.");
-        } else {
-          // Backend handles privacy - if portfolio is private, backend will return error message
-          // Check for common private portfolio messages
-          const errorMessage = err.response?.data?.message || 
-                              err.response?.data?.error ||
-                              "Portfolio not found or is unavailable.";
-          
-          // If backend says portfolio is private, show that message
-          if (errorMessage.toLowerCase().includes("private") || 
-              err.response?.status === 403) {
-            setError(errorMessage);
-          } else {
-            setError(errorMessage);
-          }
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (slug) {
       fetchPortfolio();
     } else {
       setLoading(false);
       setError("Invalid portfolio URL.");
     }
-  }, [slug]);
+  }, [slug, fetchPortfolio]);
 
   // Track analytics
   usePortfolioAnalytics(portfolio?._id, portfolio?.visibility);
 
   if (loading) {
     return (
-      <div className="portfolio-page-container">
+      <div className="portfolio-page-container page-container">
         <div className="portfolio-view-loading">
           <div className="loading-spinner"></div>
           <p>Loading portfolio...</p>
@@ -253,7 +256,7 @@ const PortfolioView = () => {
 
   if (error) {
     return (
-      <div className="portfolio-page-container">
+      <div className="portfolio-page-container page-container">
         <div className="portfolio-view-error">
           <div className="error-icon">⚠️</div>
           <h2>Portfolio Not Found</h2>
@@ -265,7 +268,7 @@ const PortfolioView = () => {
 
   if (!portfolio) {
     return (
-      <div className="portfolio-page-container">
+      <div className="portfolio-page-container page-container">
         <div className="portfolio-view-error">
           <div className="error-icon">📭</div>
           <h2>Portfolio Not Found</h2>

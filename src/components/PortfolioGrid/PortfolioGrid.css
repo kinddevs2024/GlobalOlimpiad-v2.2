@@ -25,7 +25,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: var(--spacing-xs);
   background: linear-gradient(90deg, var(--accent), transparent);
   opacity: 0;
   transition: opacity var(--transition-base);
@@ -34,7 +34,7 @@
 .portfolio-card:hover {
   border-color: var(--accent);
   box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+  transform: translateY(calc(-1 * var(--spacing-sm)));
   background: var(--bg-tertiary);
 }
 
@@ -141,8 +141,13 @@
 
 .portfolio-card-button-primary:hover {
   opacity: 0.9;
-  transform: translateY(-1px);
+  transform: translateY(calc(-1 * var(--spacing-sm)));
   box-shadow: var(--shadow-md);
+}
+
+.portfolio-card-button-primary:active,
+.portfolio-card-button-secondary:active {
+  transform: translateY(0);
 }
 
 .portfolio-card-button-secondary {
@@ -155,6 +160,7 @@
   background: var(--bg-secondary);
   border-color: var(--accent);
   color: var(--accent);
+  transform: translateY(calc(-1 * var(--spacing-sm)));
 }
 
 .portfolio-card-contacts {
@@ -192,7 +198,7 @@
 }
 
 .empty-icon {
-  font-size: 4rem;
+  font-size: var(--font-size-5xl);
   margin-bottom: var(--spacing-base);
   opacity: 0.5;
 }

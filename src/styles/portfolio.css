@@ -9,6 +9,7 @@
   color: var(--portfolio-text, #000000);
   line-height: 1.6;
   position: relative;
+  scroll-behavior: smooth;
 }
 
 /* Container width variants - applied to content sections */
@@ -70,7 +71,7 @@
 .portfolio-header-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem var(--spacing-xl);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -586,49 +587,73 @@
 
 /* Portfolio Sections */
 .portfolio-section {
-  padding: var(--portfolio-spacing, 2rem) 0;
+  padding: var(--spacing-3xl) 0;
   width: 100%;
   /* Portfolio sections use transparent background to show user's Settings theme */
   background-color: transparent;
   /* Section content can use portfolio theme colors */
+  animation: fadeIn var(--transition-slow) ease;
+  scroll-margin-top: 2rem;
+}
+
+.portfolio-section:not(:last-child) {
+  position: relative;
+  padding-bottom: var(--spacing-3xl);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.portfolio-section:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--portfolio-border, rgba(0, 0, 0, 0.08)) 50%,
+    transparent 100%
+  );
 }
 
 .portfolio-section-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 var(--spacing-xl);
 }
 
 .portfolio-section-title {
-  font-size: var(--portfolio-heading-size, 2.5rem);
-  font-weight: 700;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
   /* Use portfolio theme only */
   color: var(--portfolio-primary, #000000);
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-xl);
   line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .portfolio-section-subtitle {
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
   /* Use portfolio theme only */
   color: var(--portfolio-secondary, #666666);
-  margin-bottom: 2rem;
-  font-weight: 400;
+  margin-bottom: var(--spacing-base);
+  font-weight: var(--font-weight-normal);
 }
 
 /* Hero Section */
 .portfolio-hero {
-  min-height: 80vh;
+  min-height: 85vh;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 4rem 1.5rem;
+  padding: 5rem 1.5rem 4rem;
   position: relative;
 }
 
 .portfolio-hero-content {
-  max-width: 800px;
+  max-width: 900px;
   z-index: 1;
 }
 
@@ -637,16 +662,21 @@
   font-weight: 800;
   /* Use portfolio theme only */
   color: var(--portfolio-primary, #000000);
-  margin-bottom: 1rem;
-  line-height: 1.1;
+  margin-bottom: 1.25rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 .portfolio-hero-subtitle {
   font-size: clamp(1.125rem, 2vw, 1.5rem);
   /* Use portfolio theme only */
   color: var(--portfolio-secondary, #666666);
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   font-weight: 400;
+  line-height: 1.6;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .portfolio-hero-image {
@@ -654,8 +684,9 @@
   height: 200px;
   border-radius: 50%;
   object-fit: cover;
-  margin: 0 auto 2rem;
+  margin: 0 auto 2.5rem;
   border: 4px solid var(--portfolio-accent, #0066ff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .portfolio-hero-cta {
@@ -676,10 +707,12 @@
 
 /* About Section */
 .portfolio-about {
-  font-size: var(--portfolio-body-size, 1rem);
-  line-height: 1.8;
+  font-size: var(--portfolio-body-size, 1.125rem);
+  line-height: 1.75;
   /* Use portfolio theme only */
   color: var(--portfolio-text, #000000);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 /* Skills Section */
@@ -732,7 +765,8 @@
 .portfolio-achievement-description {
   /* Use portfolio theme only */
   color: var(--portfolio-secondary, #666666);
-  font-size: 0.95rem;
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
 .portfolio-achievement-meta {
@@ -788,7 +822,8 @@
 .portfolio-project-description {
   /* Use portfolio theme only */
   color: var(--portfolio-secondary, #666666);
-  font-size: 0.95rem;
+  font-size: 1rem;
+  line-height: 1.7;
   margin-bottom: 1rem;
 }
 
@@ -833,11 +868,13 @@
 }
 
 .portfolio-certificate-title {
-  padding: 1rem;
+  padding: 1.25rem;
   font-weight: 600;
+  font-size: 1.05rem;
   /* Use portfolio theme only */
   color: var(--portfolio-primary, #000000);
   text-align: center;
+  line-height: 1.5;
 }
 
 /* Interests Section */
@@ -906,8 +943,9 @@
 .portfolio-education-institution {
   /* Use portfolio theme only */
   color: var(--portfolio-secondary, #666666);
-  font-size: 1rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
 }
 
 .portfolio-education-period {
@@ -918,17 +956,19 @@
 
 /* Custom Section */
 .portfolio-custom-content {
-  font-size: var(--portfolio-body-size, 1rem);
-  line-height: 1.8;
+  font-size: var(--portfolio-body-size, 1.125rem);
+  line-height: 1.75;
   /* Use portfolio theme only */
   color: var(--portfolio-text, #000000);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 /* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(15px);
   }
   to {
     opacity: 1;
@@ -937,22 +977,45 @@
 }
 
 .portfolio-section-animated {
-  animation: fadeIn 0.6s ease-out;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Masked/Locked Content Styling (for university view) */
+.portfolio-masked-content,
+.portfolio-locked-content {
+  position: relative;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.04) 100%);
+  border: 1px dashed var(--portfolio-border, rgba(0, 0, 0, 0.15));
+  border-radius: var(--radius-md);
+  text-align: center;
+  color: var(--portfolio-secondary, #666666);
+  font-style: italic;
+}
+
+.portfolio-masked-content::before,
+.portfolio-locked-content::before {
+  content: "🔒";
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.6;
+  font-style: normal;
 }
 
 /* Portfolio Footer */
 .portfolio-footer {
-  margin-top: 4rem;
-  padding: 2rem 0;
+  margin-top: 5rem;
+  padding: 3rem 0;
   /* Use portfolio theme */
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  background-color: rgba(0, 0, 0, 0.02);
+  border-top: 1px solid var(--portfolio-border, rgba(0, 0, 0, 0.08));
+  background-color: transparent;
 }
 
 .portfolio-footer-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 var(--spacing-xl);
   text-align: center;
 }
 
@@ -1038,7 +1101,12 @@
   }
 
   .portfolio-section {
-    padding: 2rem 0;
+    padding: var(--spacing-2xl) 0;
+  }
+  
+  .portfolio-section:not(:last-child) {
+    padding-bottom: var(--spacing-2xl);
+    margin-bottom: var(--spacing-lg);
   }
 
   .portfolio-section-title {
@@ -1053,8 +1121,8 @@
 
   /* Hero Section */
   .portfolio-hero {
-    min-height: 60vh;
-    padding: 2rem 1rem;
+    min-height: 70vh;
+    padding: 3rem 1rem 2.5rem;
   }
 
   .portfolio-hero-content {
@@ -1069,12 +1137,13 @@
 
   .portfolio-hero-title {
     font-size: clamp(2rem, 6vw, 3rem);
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
   }
 
   .portfolio-hero-subtitle {
     font-size: clamp(1rem, 3vw, 1.25rem);
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    line-height: 1.6;
   }
 
   .portfolio-hero-cta {
@@ -1226,8 +1295,8 @@
   }
 
   .portfolio-hero {
-    min-height: 50vh;
-    padding: 1.5rem 0.75rem;
+    min-height: 60vh;
+    padding: 2.5rem 0.75rem 2rem;
   }
 
   .portfolio-hero-image {

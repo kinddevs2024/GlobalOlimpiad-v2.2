@@ -97,7 +97,6 @@ const ProfileEdit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted!");
     setLoading(true);
     setNotification(null);
 
@@ -184,25 +183,6 @@ const ProfileEdit = () => {
         updateData.append("userLogo", logoUrl);
       }
 
-      // Debug: Log FormData contents - iterate through all entries
-      console.log("=== Form Data Being Sent ===");
-      console.log("name:", fullName);
-      console.log("email:", formData.email);
-      console.log("gmail:", formData.gmail);
-      console.log("tel:", formData.tel);
-      console.log("phone:", formData.phone);
-      console.log("address:", formData.address);
-      console.log("dateBorn:", formData.dateBorn);
-      console.log("gender:", formData.gender);
-      console.log("schoolName:", formData.schoolName);
-      console.log("schoolId:", formData.schoolId);
-      console.log("logoUrl:", logoUrl);
-
-      // Log all FormData entries to see what's actually being sent
-      console.log("=== FormData Entries ===");
-      for (let pair of updateData.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
-      }
 
       // If no new logo is being uploaded, try sending as JSON instead
       // This might work better if backend has issues parsing FormData
@@ -233,15 +213,10 @@ const ProfileEdit = () => {
           jsonData.userLogo = logoUrl;
         }
 
-        console.log("Sending as JSON (no file upload):", jsonData);
         response = await authAPI.updateProfile(jsonData);
       } else {
-        // Has file upload, use FormData
-        console.log("Calling updateProfile API with FormData...");
         response = await authAPI.updateProfile(updateData);
       }
-
-      console.log("Profile update response:", response.data);
 
       // Fetch updated user data with devices from /me endpoint
       try {

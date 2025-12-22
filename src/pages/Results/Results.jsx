@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, Navigate, useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   olympiadAPI,
   adminAPI,
@@ -44,20 +44,7 @@ const Results = () => {
   const canViewAllResults =
     isAdminOrOwner || isResolter || isSchoolTeacher || isUniversity;
 
-  useEffect(() => {
-    if (!user) return; // Wait for user to be loaded
-
-    if (id) {
-      // If olympiad ID is provided, fetch results for that specific olympiad
-      fetchResults();
-    } else {
-      // If no olympiad ID, fetch all user's results
-      fetchAllUserResults();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, user?._id, user?.role]);
-
-  const fetchResults = async () => {
+  const fetchResults = useCallback(async () => {
     if (!id) {
       setError("Olympiad ID is required");
       setLoading(false);
@@ -99,10 +86,6 @@ const Results = () => {
 
         // Final safety check
         if (!Array.isArray(submissions)) {
-          console.warn(
-            "Submissions is not an array in fetchResults:",
-            submissions
-          );
           submissions = [];
         }
 
@@ -118,7 +101,7 @@ const Results = () => {
         let userHasPendingSubmission = false;
         if (!canViewAllResults) {
           // Check if user has a submission that isn't checked yet
-          const userSubmission = submissions.find((submission) => {
+            const userSubmission = (submissions || []).find((submission) => {
             const submissionUserId = submission.userId || submission.user?._id;
             return (
               user?._id &&
@@ -131,7 +114,7 @@ const Results = () => {
             userHasPendingSubmission = true;
           }
 
-          visibleSubmissions = submissions.filter((submission) => {
+          visibleSubmissions = (submissions || []).filter((submission) => {
             const isOwnResult =
               submission.userId === user?._id ||
               submission.user?._id === user?._id;
@@ -149,11 +132,11 @@ const Results = () => {
         let allResults = [];
         if (visibleSubmissions.length > 0) {
           try {
-            allResults = visibleSubmissions.map((submission, index) => ({
+            allResults = (visibleSubmissions || []).map((submission, index) => ({
               ...submission,
               score: submission.score || submission.totalScore || 0,
               totalScore: submission.totalScore || submission.score || 0,
-              totalPoints: olympiad?.totalPoints || 100,
+              totalPoints: Number(olympiad?.totalPoints) || 100,
               completedAt: submission.submittedAt || submission.completedAt,
               user: submission.user || { name: "Unknown", email: "Unknown" },
             }));
@@ -187,7 +170,7 @@ const Results = () => {
 
         // Find user result if they participated
         const userResult = Array.isArray(allResults)
-          ? allResults.find((r) => {
+          ? (allResults || []).find((r) => {
               const resultUserId = r.user?._id || r.userId || r.user;
               return (
                 user?._id &&
@@ -230,7 +213,7 @@ const Results = () => {
                 submissionsData.submissions || submissionsData.data || [];
             }
 
-            const userSubmission = submissions.find((submission) => {
+            const userSubmission = (submissions || []).find((submission) => {
               const submissionUserId =
                 submission.userId || submission.user?._id;
               return (
@@ -245,7 +228,6 @@ const Results = () => {
             }
           } catch (err) {
             // If we can't check submissions, just continue
-            console.log("Could not check for pending submissions:", err);
           }
         }
       }
@@ -286,7 +268,7 @@ const Results = () => {
           });
 
           // Find user result
-          const foundUserResult = sortedResults.find((r) => {
+          const foundUserResult = (sortedResults || []).find((r) => {
             const resultUserId = r.user?._id || r.userId || r.user;
             return (
               resultUserId === user._id || resultUserId === user._id.toString()
@@ -309,10 +291,7 @@ const Results = () => {
       }
     } catch (error) {
       console.error("Error fetching results:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch results";
+      const errorMessage = "Failed to fetch results. Please try again later.";
 
       // Check if error message indicates results are being processed
       const lowerErrorMessage = errorMessage.toLowerCase();
@@ -338,7 +317,7 @@ const Results = () => {
                 submissionsData.submissions || submissionsData.data || [];
             }
 
-            const userSubmission = submissions.find((submission) => {
+            const userSubmission = (submissions || []).find((submission) => {
               const submissionUserId =
                 submission.userId || submission.user?._id;
               return (
@@ -365,10 +344,10 @@ const Results = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user?._id, canViewAllResults, isResolter, isSchoolTeacher, isUniversity, user]);
 
   // Fetch all user results (for /results page without olympiad ID)
-  const fetchAllUserResults = async () => {
+  const fetchAllUserResults = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -468,7 +447,6 @@ const Results = () => {
 
       // Final safety check - ensure submissions is an array
       if (!Array.isArray(submissions)) {
-        console.warn("Submissions is not an array:", submissions);
         submissions = [];
       }
 
@@ -479,11 +457,11 @@ const Results = () => {
       if (submissions.length > 0) {
         // Check if results already have olympiad info (from resolter API)
         const hasOlympiadInfo =
-          submissions[0].olympiad || submissions[0].olympiadTitle;
+          submissions?.[0]?.olympiad || submissions?.[0]?.olympiadTitle;
 
         if (hasOlympiadInfo) {
           // Results already have olympiad info, use them as-is
-          resultsWithOlympiad = submissions.map((submission) => ({
+          resultsWithOlympiad = (submissions || []).map((submission) => ({
             ...submission,
             olympiadTitle:
               submission.olympiadTitle ||
@@ -499,8 +477,8 @@ const Results = () => {
             const olympiadsData = olympiadsResponse?.data;
             const olympiads = Array.isArray(olympiadsData) ? olympiadsData : [];
 
-            resultsWithOlympiad = submissions.map((submission) => {
-              const olympiad = olympiads.find(
+            resultsWithOlympiad = (submissions || []).map((submission) => {
+              const olympiad = (olympiads || []).find(
                 (o) => o._id === submission.olympiadId
               );
               return {
@@ -528,7 +506,7 @@ const Results = () => {
       // 3. Results with visible === true (if not checked, only visible to admins/resolters)
       let visibleResults = resultsWithOlympiad;
       if (!canViewAllResults) {
-        visibleResults = resultsWithOlympiad.filter((result) => {
+        visibleResults = (resultsWithOlympiad || []).filter((result) => {
           const isOwnResult =
             result.userId === user?._id || result.user?._id === user?._id;
           const isCheckedAndVisible =
@@ -551,11 +529,24 @@ const Results = () => {
       setAllUserResults(visibleResults);
     } catch (error) {
       console.error("Error fetching all user results:", error);
-      setError(error.response?.data?.message || "Failed to fetch results");
+      setError("Failed to fetch results. Please try again later.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?._id, canViewAllResults, isResolter, isSchoolTeacher, isUniversity, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (id) {
+      fetchResults();
+    } else {
+      fetchAllUserResults();
+    }
+  }, [id, user, fetchResults, fetchAllUserResults]);
+
+  // Get top 3 from topFive - must be before any early returns
+  const topThree = useMemo(() => (topFive || []).slice(0, 3), [topFive]);
 
   if (loading) {
     return (
@@ -573,8 +564,8 @@ const Results = () => {
       error.toLowerCase().includes("coming");
 
     return (
-      <div className="results-page">
-        <div className="container">
+      <div className="results-page page-container">
+        <div>
           <div className="no-results card">
             {isPendingMessage ? (
               <>
@@ -607,8 +598,8 @@ const Results = () => {
   // If no olympiad ID, show all user results
   if (!id) {
     return (
-      <div className="results-page">
-        <div className="container">
+      <div className="results-page page-container">
+        <div>
           <div className="results-header">
             <h1 className="results-title text-glow">
               {canViewAllResults ? "All Results" : "All Your Results"}
@@ -620,9 +611,10 @@ const Results = () => {
             </p>
           </div>
 
-          {allUserResults.length === 0 ? (
-            <div className="no-results card">
-              <h2>No Results Found</h2>
+          {(allUserResults || []).length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📊</div>
+              <h3>No Results Found</h3>
               <p>
                 {canViewAllResults
                   ? "No olympiad results found yet."
@@ -634,13 +626,11 @@ const Results = () => {
             </div>
           ) : (
             <div className="all-results-list">
-              {allUserResults.map((resultItem, index) => {
-                const percentage = resultItem.olympiad?.totalPoints
-                  ? Math.round(
-                      (resultItem.totalScore /
-                        resultItem.olympiad.totalPoints) *
-                        100
-                    )
+              {(allUserResults || []).map((resultItem, index) => {
+                const totalScore = Number(resultItem?.totalScore) || 0;
+                const totalPoints = Number(resultItem?.olympiad?.totalPoints) || 100;
+                const percentage = totalPoints > 0
+                  ? Math.round((totalScore / totalPoints) * 100)
                   : 0;
 
                 return (
@@ -664,11 +654,11 @@ const Results = () => {
                     <div className="result-item-content">
                       <div className="result-item-score">
                         <span className="score-value">
-                          {resultItem.totalScore}
+                          {totalScore}
                         </span>
                         <span className="score-divider">/</span>
                         <span className="score-total">
-                          {resultItem.olympiad?.totalPoints || 100}
+                          {totalPoints}
                         </span>
                         <span className="score-percentage">
                           ({percentage}%)
@@ -713,25 +703,22 @@ const Results = () => {
   // For admins/owners/resolters, show all results even if they haven't participated
   if (!userResult && !canViewAllResults) {
     return (
-      <div className="results-page">
-        <div className="container">
-          <div className="no-results card">
+      <div className="results-page page-container">
+        <div>
+          <div className="empty-state">
             {hasPendingSubmission ? (
               <>
-                <h1 className="pending-results-title">
-                  Your Results Are Being Checked
-                </h1>
-                <p className="pending-results-message">Please wait.</p>
+                <div className="empty-icon">⏳</div>
+                <h3>Your Results Are Being Checked</h3>
+                <p>Please wait. We will notify you once your results are ready.</p>
                 <Link to="/dashboard" className="button-primary">
                   Go to Dashboard
                 </Link>
-                <p className="pending-results-footer">
-                  We will notify you once your results are ready.
-                </p>
               </>
             ) : (
               <>
-                <h2>No Results Found</h2>
+                <div className="empty-icon">📊</div>
+                <h3>No Results Found</h3>
                 <p>You haven't completed this olympiad yet.</p>
                 <Link to="/dashboard" className="button-primary">
                   Go to Dashboard
@@ -745,12 +732,13 @@ const Results = () => {
   }
 
   // For admins/owners/resolters with no results at all for this olympiad
-  if (canViewAllResults && allResults.length === 0 && !userResult) {
+  if (canViewAllResults && (allResults || []).length === 0 && !userResult) {
     return (
-      <div className="results-page">
-        <div className="container">
-          <div className="no-results card">
-            <h2>No Results Found</h2>
+      <div className="results-page page-container">
+        <div>
+          <div className="empty-state">
+            <div className="empty-icon">📊</div>
+            <h3>No Results Found</h3>
             <p>No one has completed this olympiad yet.</p>
             <Link to="/dashboard" className="button-primary">
               Go to Dashboard
@@ -761,21 +749,18 @@ const Results = () => {
     );
   }
 
+  const userScore = userResult ? (Number(userResult?.score) || Number(userResult?.totalScore) || 0) : 0;
+  const userTotalPoints = userResult ? (Number(userResult?.totalPoints) || 100) : 100;
   const percentage = userResult
-    ? userResult.percentage ||
-      (userResult.totalPoints
-        ? Math.round((userResult.score / userResult.totalPoints) * 100)
-        : 0)
+    ? (userResult.percentage !== undefined ? Number(userResult.percentage) : (userTotalPoints > 0 ? Math.round((userScore / userTotalPoints) * 100) : 0))
     : 0;
 
-  // Get top 3 from topFive
-  const topThree = topFive.slice(0, 3);
-
   // Check if user is in top 3
-  const userInTopThree = userResult && userResult.rank <= 3;
+  const userInTopThree = userResult && (Number(userResult?.rank) || 0) <= 3;
 
   const handleEditResult = async (resultId) => {
-    if (!editForm.totalScore || isNaN(editForm.totalScore)) {
+    const totalScoreNum = Number(editForm?.totalScore);
+    if (!editForm?.totalScore || isNaN(totalScoreNum) || totalScoreNum < 0) {
       setNotification({ message: "Please enter a valid score", type: "error" });
       return;
     }
@@ -783,12 +768,16 @@ const Results = () => {
     try {
       setLoading(true);
       const updateData = {};
-      if (editForm.totalScore)
-        updateData.totalScore = parseFloat(editForm.totalScore);
-      if (editForm.maxScore)
-        updateData.maxScore = parseFloat(editForm.maxScore);
-      if (editForm.percentage)
-        updateData.percentage = parseFloat(editForm.percentage);
+      if (editForm?.totalScore)
+        updateData.totalScore = Math.max(0, Number(editForm.totalScore) || 0);
+      if (editForm?.maxScore) {
+        const maxScoreNum = Number(editForm.maxScore) || 0;
+        if (maxScoreNum > 0) updateData.maxScore = maxScoreNum;
+      }
+      if (editForm?.percentage) {
+        const percentageNum = Number(editForm.percentage) || 0;
+        if (percentageNum >= 0 && percentageNum <= 100) updateData.percentage = percentageNum;
+      }
 
       await resolterAPI.editResult(resultId, updateData);
 
@@ -807,7 +796,7 @@ const Results = () => {
       }
     } catch (error) {
       setNotification({
-        message: error.response?.data?.message || "Failed to update result",
+        message: "Failed to update result. Please try again.",
         type: "error",
       });
     } finally {
@@ -816,11 +805,12 @@ const Results = () => {
   };
 
   const openEditModal = (result) => {
+    if (!result) return;
     setEditingResult(result);
     setEditForm({
-      totalScore: result.totalScore || result.score || "",
-      maxScore: result.totalPoints || result.maxScore || "",
-      percentage: result.percentage || "",
+      totalScore: String(Number(result?.totalScore) || Number(result?.score) || 0),
+      maxScore: String(Number(result?.totalPoints) || Number(result?.maxScore) || 100),
+      percentage: result?.percentage !== undefined ? String(Number(result.percentage) || 0) : "",
     });
   };
 
@@ -834,10 +824,11 @@ const Results = () => {
     if (position) return position; // Use position from API if available
     if (!userResult) return "N/A";
     // Fallback to generating position
-    if (userResult.rank === 1) return "🥇 1st Place";
-    if (userResult.rank === 2) return "🥈 2nd Place";
-    if (userResult.rank === 3) return "🥉 3rd Place";
-    return `#${userResult.rank}`;
+    const rank = Number(userResult?.rank) || 0;
+    if (rank === 1) return "🥇 1st Place";
+    if (rank === 2) return "🥈 2nd Place";
+    if (rank === 3) return "🥉 3rd Place";
+    return `#${rank}`;
   };
 
   return (
@@ -857,17 +848,15 @@ const Results = () => {
           <div className="top-three-section">
             <h3 className="section-title">🏆 Top 3 Winners</h3>
             <div className="top-three-grid">
-              {topThree.map((topResult, index) => {
+              {(topThree || []).map((topResult, index) => {
                 const isCurrentUser =
                   topResult.userId === user._id ||
                   topResult.user?._id === user._id;
-                const topPercentage =
-                  topResult.percentage ||
-                  (topResult.totalPoints
-                    ? Math.round(
-                        (topResult.score / topResult.totalPoints) * 100
-                      )
-                    : 0);
+                const topScore = Number(topResult?.score) || Number(topResult?.totalScore) || 0;
+                const topTotalPoints = Number(topResult?.totalPoints) || 100;
+                const topPercentage = topResult?.percentage !== undefined
+                  ? Number(topResult.percentage)
+                  : (topTotalPoints > 0 ? Math.round((topScore / topTotalPoints) * 100) : 0);
 
                 return (
                   <div
@@ -891,7 +880,7 @@ const Results = () => {
                           : topResult.userName || "Anonymous"}
                       </div>
                       <div className="top-three-score">
-                        {topResult.score} / {topResult.totalPoints || 100}
+                        {topScore} / {topTotalPoints}
                       </div>
                       <div className="top-three-percentage">
                         {topPercentage}%
@@ -905,10 +894,10 @@ const Results = () => {
         )}
 
         {/* Show all results table for admins/owners/resolters */}
-        {canViewAllResults && allResults.length > 0 && (
+        {canViewAllResults && (allResults || []).length > 0 && (
           <div className="all-results-table-section">
             <h3 className="section-title">
-              All Participants ({allResults.length})
+              All Participants ({(allResults || []).length})
             </h3>
             <div className="all-results-table card">
               <div
@@ -924,9 +913,11 @@ const Results = () => {
                 )}
               </div>
               <div className="table-body">
-                {allResults.map((result, index) => {
-                  const resultPercentage = result.totalPoints
-                    ? Math.round((result.totalScore / result.totalPoints) * 100)
+                {(allResults || []).map((result, index) => {
+                  const resultScore = Number(result?.totalScore) || Number(result?.score) || 0;
+                  const resultTotalPoints = Number(result?.totalPoints) || 100;
+                  const resultPercentage = resultTotalPoints > 0
+                    ? Math.round((resultScore / resultTotalPoints) * 100)
                     : 0;
                   const isCurrentUser =
                     user?._id &&
@@ -963,9 +954,9 @@ const Results = () => {
                         {result.user?.email || "-"}
                       </div>
                       <div className="table-cell score-cell">
-                        <span className="score-value">{result.totalScore}</span>
+                        <span className="score-value">{resultScore}</span>
                         <span className="score-max">
-                          / {result.totalPoints || 100}
+                          / {resultTotalPoints}
                         </span>
                         <span className="score-percentage">
                           ({resultPercentage}%)
@@ -1017,11 +1008,11 @@ const Results = () => {
                 <div className="form-group">
                   <label>
                     Current Score:{" "}
-                    {editingResult.totalScore || editingResult.score || 0}
-                    {editingResult.totalPoints &&
-                      ` / ${editingResult.totalPoints}`}
-                    {editingResult.percentage !== undefined &&
-                      ` (${editingResult.percentage}%)`}
+                    {Number(editingResult?.totalScore) || Number(editingResult?.score) || 0}
+                    {editingResult?.totalPoints &&
+                      ` / ${Number(editingResult.totalPoints) || 100}`}
+                    {editingResult?.percentage !== undefined &&
+                      ` (${Number(editingResult.percentage) || 0}%)`}
                   </label>
                 </div>
                 <div className="form-group">
@@ -1092,10 +1083,10 @@ const Results = () => {
             <div className="user-result-content">
               <div className="user-result-main">
                 <div className="user-score-large">
-                  <div className="score-number">{userResult.score}</div>
+                  <div className="score-number">{userScore}</div>
                   <div className="score-divider">/</div>
                   <div className="score-total">
-                    {userResult.totalPoints || 100}
+                    {userTotalPoints}
                   </div>
                 </div>
                 <div className="user-percentage-large">{percentage}%</div>
@@ -1105,7 +1096,7 @@ const Results = () => {
                 <div className="detail-item">
                   <span className="detail-label">Rank</span>
                   <span className="detail-value">
-                    {userResult.position || `#${userResult.rank}`}
+                    {userResult?.position || `#${Number(userResult?.rank) || 0}`}
                   </span>
                 </div>
                 <div className="detail-item">
@@ -1118,10 +1109,10 @@ const Results = () => {
                       : "N/A"}
                   </span>
                 </div>
-                {totalParticipants > 0 && (
+                {(Number(totalParticipants) || 0) > 0 && (
                   <div className="detail-item">
                     <span className="detail-label">Total Participants</span>
-                    <span className="detail-value">{totalParticipants}</span>
+                    <span className="detail-value">{Number(totalParticipants) || 0}</span>
                   </div>
                 )}
               </div>
@@ -1130,17 +1121,17 @@ const Results = () => {
         )}
 
         {/* User's Position in List (if not in top 3) */}
-        {userResult && !userInTopThree && userResult.rank > 3 && (
+        {userResult && !userInTopThree && (Number(userResult?.rank) || 0) > 3 && (
           <div className="user-position-section">
             <h3 className="section-title">Your Position</h3>
             <div className="user-position-card card highlighted">
               <div className="position-rank">
-                {userResult.position || `#${userResult.rank}`}
+                {userResult?.position || `#${Number(userResult?.rank) || 0}`}
               </div>
               <div className="position-info">
                 <div className="position-name">You</div>
                 <div className="position-score">
-                  {userResult.score} / {userResult.totalPoints || 100} (
+                  {userScore} / {userTotalPoints} (
                   {percentage}%)
                 </div>
                 <div className="position-time">
