@@ -1,9 +1,23 @@
+// Console security warning
+if (typeof console !== 'undefined') {
+  console.warn(
+    '%cОстановитесь!',
+    'font-size: 24px; font-weight: bold; color: red;'
+  ) // eslint-disable-line no-console   
+
+  
+  console.warn(
+    '%cЭта функция браузера предназначена для разработчиков. Если кто-то предложил вам скопировать и вставить что-то здесь, чтобы включить какую-либо функцию в глобальном олимпиаде или взломать чей-то аккаунт, это мошенники. Выполнив эти действия, вы предоставите им доступ к своему аккаунту аккаунт.',
+    'font-size: 14px; color: #333; line-height: 1.5;'
+  )
+}
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
+import { useEffect } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
@@ -292,13 +306,24 @@ const AppRoutes = () => {
 };
 
 function App() {
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7245/ingest/4b0ecb8a-e6fe-4633-994a-5ff57e8c825a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:308',message:'App component mounted - Router will initialize with future flags',data:{hasFutureFlags:true,reactRouterVersion:'6.30.2',futureFlags:['v7_startTransition','v7_relativeSplatPath']},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7245/ingest/4b0ecb8a-e6fe-4633-994a-5ff57e8c825a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:321',message:'Router component created with future flags prop',data:{routerType:'BrowserRouter',futureFlags:['v7_startTransition','v7_relativeSplatPath'],flagsEnabled:true},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+  }, []);
+  // #endregion
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <TranslationProvider>
         <AuthProvider>
           <ThemeProvider>
             <SocketProvider>
-              <Router>
+              <Router
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
                 <ScrollToTop />
                 <CookieConsentWrapper />
                 <div className="app">

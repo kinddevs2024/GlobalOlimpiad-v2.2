@@ -40,10 +40,15 @@
 }
 
 .profile-content {
+  text-align: start;
 }
 
 .profile-card {
   /* Uses global .card class */
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .profile-avatar-section {
@@ -110,12 +115,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  text-align: start;
 }
 
 .profile-section {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: start;
 }
 
 .section-title {
@@ -123,6 +135,7 @@
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   margin-bottom: var(--spacing-sm);
+  text-align: start;
 }
 
 .detail-grid {
@@ -135,6 +148,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  text-align: start;
 }
 
 .detail-item.full-width {
