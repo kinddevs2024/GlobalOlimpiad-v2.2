@@ -9,6 +9,19 @@ import ThemeCustomizer from "../../components/PortfolioConstructor/ThemeCustomiz
 import SectionManager from "../../components/PortfolioConstructor/SectionManager";
 import PortfolioPreview from "../../components/PortfolioConstructor/PortfolioPreview";
 import TextToPortfolioInput from "../../components/PortfolioConstructor/TextToPortfolioInput";
+import SEOSettings from "../../components/PortfolioConstructor/SEOSettings";
+import SocialLinksSettings from "../../components/PortfolioConstructor/SocialLinksSettings";
+import AdvancedStyling from "../../components/PortfolioConstructor/AdvancedStyling";
+import CustomCodeSettings from "../../components/PortfolioConstructor/CustomCodeSettings";
+import PortfolioActions from "../../components/PortfolioConstructor/PortfolioActions";
+import HeroImageSettings from "../../components/PortfolioConstructor/HeroImageSettings";
+import BackgroundSettings from "../../components/PortfolioConstructor/BackgroundSettings";
+import FaviconSettings from "../../components/PortfolioConstructor/FaviconSettings";
+import ImageGallery from "../../components/PortfolioConstructor/ImageGallery";
+import FontSettings from "../../components/PortfolioConstructor/FontSettings";
+import PortfolioStatistics from "../../components/PortfolioConstructor/PortfolioStatistics";
+import SharingSettings from "../../components/PortfolioConstructor/SharingSettings";
+import ImageUpload from "../../components/PortfolioConstructor/ImageUpload";
 import "./PortfolioConstructor.css";
 import "../../components/PortfolioConstructor/PortfolioConstructor.css";
 
@@ -261,27 +274,71 @@ const PortfolioConstructor = () => {
       backendFormat.logo = frontendPortfolio.logo;
     }
 
-    // Add hero section - ensure all fields are included even if null/empty
+    // Add hero section - preserve null values (don't convert to empty strings)
     if (frontendPortfolio.hero) {
       backendFormat.hero = {
-        title: frontendPortfolio.hero.title || "",
-        subtitle: frontendPortfolio.hero.subtitle || "",
-        image: frontendPortfolio.hero.image || "",
-        ctaText: frontendPortfolio.hero.ctaText || "",
+        title:
+          frontendPortfolio.hero.title !== undefined
+            ? frontendPortfolio.hero.title
+            : null,
+        subtitle:
+          frontendPortfolio.hero.subtitle !== undefined
+            ? frontendPortfolio.hero.subtitle
+            : null,
+        description:
+          frontendPortfolio.hero.description !== undefined
+            ? frontendPortfolio.hero.description
+            : null,
+        image:
+          frontendPortfolio.hero.image !== undefined
+            ? frontendPortfolio.hero.image
+            : null,
+        avatar:
+          frontendPortfolio.hero.avatar !== undefined
+            ? frontendPortfolio.hero.avatar
+            : null,
+        ctaText:
+          frontendPortfolio.hero.ctaText !== undefined
+            ? frontendPortfolio.hero.ctaText
+            : null,
         ctaLink:
           frontendPortfolio.hero.ctaLink !== undefined
             ? frontendPortfolio.hero.ctaLink
-            : null, // Allow null
+            : null,
       };
     } else {
-      // Include empty hero object if it doesn't exist
+      // If hero doesn't exist, set default structure with null values
       backendFormat.hero = {
-        title: "",
-        subtitle: "",
-        image: "",
-        ctaText: "",
+        title: null,
+        subtitle: null,
+        description: null,
+        image: null,
+        avatar: null,
+        ctaText: null,
         ctaLink: null,
       };
+    }
+
+    // Add new portfolio features - always include these fields (even if empty)
+    backendFormat.imageGallery = Array.isArray(frontendPortfolio.imageGallery)
+      ? frontendPortfolio.imageGallery
+      : [];
+    backendFormat.seo = frontendPortfolio.seo || {};
+    backendFormat.socialLinks = Array.isArray(frontendPortfolio.socialLinks)
+      ? frontendPortfolio.socialLinks
+      : [];
+    backendFormat.sharing = frontendPortfolio.sharing || {};
+    backendFormat.analytics = frontendPortfolio.analytics || {};
+    backendFormat.customCode = frontendPortfolio.customCode || {};
+    backendFormat.favicon = frontendPortfolio.favicon || "";
+    backendFormat.background = frontendPortfolio.background || {};
+    backendFormat.fonts = frontendPortfolio.fonts || {};
+    backendFormat.statistics = frontendPortfolio.statistics || {};
+    if (frontendPortfolio.animations !== undefined) {
+      backendFormat.animations = frontendPortfolio.animations || {};
+    }
+    if (frontendPortfolio.visibility !== undefined) {
+      backendFormat.visibility = frontendPortfolio.visibility;
     }
 
     // Ensure required fields are present
@@ -319,7 +376,8 @@ const PortfolioConstructor = () => {
           headingSize: backendTheme.styles?.headingSize || "2.5rem",
           bodySize: backendTheme.styles?.bodySize || "1rem",
         },
-        spacing: backendTheme.styles?.spacing || backendTheme.spacing || "normal",
+        spacing:
+          backendTheme.styles?.spacing || backendTheme.spacing || "normal",
         containerWidth: backendTheme.containerWidth || "medium",
       };
       // Normalize using our theme normalizer (preserves containerWidth)
@@ -465,6 +523,38 @@ const PortfolioConstructor = () => {
       };
     }
 
+    // Ensure new portfolio features are initialized
+    if (!normalized.imageGallery || !Array.isArray(normalized.imageGallery)) {
+      normalized.imageGallery = [];
+    }
+    if (!normalized.seo) {
+      normalized.seo = {};
+    }
+    if (!normalized.socialLinks || !Array.isArray(normalized.socialLinks)) {
+      normalized.socialLinks = [];
+    }
+    if (!normalized.sharing) {
+      normalized.sharing = {};
+    }
+    if (!normalized.analytics) {
+      normalized.analytics = {};
+    }
+    if (!normalized.customCode) {
+      normalized.customCode = {};
+    }
+    if (!normalized.favicon) {
+      normalized.favicon = "";
+    }
+    if (!normalized.background) {
+      normalized.background = {};
+    }
+    if (!normalized.fonts) {
+      normalized.fonts = {};
+    }
+    if (!normalized.statistics) {
+      normalized.statistics = {};
+    }
+
     // Map isPublic to visibility
     if (normalized.isPublic !== undefined && !normalized.visibility) {
       normalized.visibility = normalized.isPublic ? "public" : "private";
@@ -480,7 +570,6 @@ const PortfolioConstructor = () => {
       try {
         setLoading(true);
         const response = await portfolioAPI.getMyPortfolio();
-
 
         // Handle nested response structure: { success: true, data: [...] } or { success: true, data: {...} }
         let portfolioData = null;
@@ -522,7 +611,6 @@ const PortfolioConstructor = () => {
             }
           }
         }
-
 
         if (portfolioData) {
           // Normalize portfolio structure from backend format to frontend format
@@ -603,7 +691,49 @@ const PortfolioConstructor = () => {
       if (portfolio._id) {
         // Update existing portfolio
         await portfolioAPI.updatePortfolio(portfolio._id, backendData);
-        savedData = portfolio;
+
+        // Reload portfolio from server to get the latest data including imageGallery
+        try {
+          const reloadResponse = await portfolioAPI.getMyPortfolio();
+          let reloadedPortfolio = null;
+          if (reloadResponse && reloadResponse.data) {
+            if (
+              reloadResponse.data.success !== undefined &&
+              reloadResponse.data.data
+            ) {
+              if (Array.isArray(reloadResponse.data.data)) {
+                const portfolios = reloadResponse.data.data;
+                if (portfolios.length > 0) {
+                  const sorted = [...portfolios].sort((a, b) => {
+                    const dateA = new Date(a.updatedAt || a.createdAt || 0);
+                    const dateB = new Date(b.updatedAt || b.createdAt || 0);
+                    return dateB - dateA;
+                  });
+                  reloadedPortfolio = sorted[0];
+                }
+              } else {
+                reloadedPortfolio = reloadResponse.data.data;
+              }
+            } else if (reloadResponse.data._id || reloadResponse.data.slug) {
+              reloadedPortfolio = reloadResponse.data;
+            }
+          }
+
+          if (reloadedPortfolio) {
+            const normalizedPortfolio =
+              normalizePortfolioFromBackend(reloadedPortfolio);
+            setPortfolio(normalizedPortfolio);
+            savedData = normalizedPortfolio;
+          } else {
+            savedData = portfolio;
+          }
+        } catch (reloadError) {
+          console.error(
+            "PortfolioConstructor: handleSave - Error reloading portfolio:",
+            reloadError
+          );
+          savedData = portfolio;
+        }
       } else {
         // Create new portfolio
         const response = await portfolioAPI.createPortfolio(backendData);
@@ -638,6 +768,40 @@ const PortfolioConstructor = () => {
       }
       if (updates.theme && typeof updates.theme === "object") {
         updated.theme = { ...prev?.theme, ...updates.theme };
+      }
+      // Handle imageGallery array - always replace with new array
+      if (updates.imageGallery !== undefined) {
+        updated.imageGallery = Array.isArray(updates.imageGallery)
+          ? updates.imageGallery
+          : [];
+      }
+      // Handle other new fields
+      if (updates.seo !== undefined) {
+        updated.seo = { ...prev?.seo, ...updates.seo };
+      }
+      if (updates.socialLinks !== undefined) {
+        updated.socialLinks = updates.socialLinks;
+      }
+      if (updates.sharing !== undefined) {
+        updated.sharing = { ...prev?.sharing, ...updates.sharing };
+      }
+      if (updates.analytics !== undefined) {
+        updated.analytics = { ...prev?.analytics, ...updates.analytics };
+      }
+      if (updates.customCode !== undefined) {
+        updated.customCode = { ...prev?.customCode, ...updates.customCode };
+      }
+      if (updates.background !== undefined) {
+        updated.background = { ...prev?.background, ...updates.background };
+      }
+      if (updates.fonts !== undefined) {
+        updated.fonts = { ...prev?.fonts, ...updates.fonts };
+      }
+      if (updates.statistics !== undefined) {
+        updated.statistics = { ...prev?.statistics, ...updates.statistics };
+      }
+      if (updates.favicon !== undefined) {
+        updated.favicon = updates.favicon;
       }
       return updated;
     });
@@ -700,198 +864,385 @@ const PortfolioConstructor = () => {
         )}
 
         <div className="constructor-content">
-        <div className="constructor-sidebar">
-          <div className="constructor-tabs">
-            <button
-              className={`tab-button ${
-                activeTab === "general" ? "active" : ""
-              }`}
-              onClick={() => setActiveTab("general")}
-            >
-              General
-            </button>
-            <button
-              className={`tab-button ${activeTab === "layout" ? "active" : ""}`}
-              onClick={() => setActiveTab("layout")}
-            >
-              Layout
-            </button>
-            <button
-              className={`tab-button ${activeTab === "theme" ? "active" : ""}`}
-              onClick={() => setActiveTab("theme")}
-            >
-              Theme
-            </button>
-            <button
-              className={`tab-button ${
-                activeTab === "sections" ? "active" : ""
-              }`}
-              onClick={() => setActiveTab("sections")}
-            >
-              Sections
-            </button>
-            <button
-              className={`tab-button ${
-                activeTab === "preview" ? "active" : ""
-              }`}
-              onClick={() => setActiveTab("preview")}
-            >
-              Preview
-            </button>
+          <div className="constructor-sidebar">
+            <div className="constructor-tabs">
+              <button
+                className={`tab-button ${
+                  activeTab === "general" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("general")}
+              >
+                General
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "layout" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("layout")}
+              >
+                Layout
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "theme" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("theme")}
+              >
+                Theme
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "sections" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("sections")}
+              >
+                Sections
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "preview" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("preview")}
+              >
+                Preview
+              </button>
+              <button
+                className={`tab-button ${activeTab === "seo" ? "active" : ""}`}
+                onClick={() => setActiveTab("seo")}
+              >
+                SEO
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "social" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("social")}
+              >
+                Social
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "styling" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("styling")}
+              >
+                Styling
+              </button>
+              <button
+                className={`tab-button ${activeTab === "code" ? "active" : ""}`}
+                onClick={() => setActiveTab("code")}
+              >
+                Code
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "actions" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("actions")}
+              >
+                Actions
+              </button>
+              <button
+                className={`tab-button ${activeTab === "hero" ? "active" : ""}`}
+                onClick={() => setActiveTab("hero")}
+              >
+                Hero
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "background" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("background")}
+              >
+                Background
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "gallery" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("gallery")}
+              >
+                Gallery
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "fonts" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("fonts")}
+              >
+                Fonts
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "favicon" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("favicon")}
+              >
+                Favicon
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "sharing" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("sharing")}
+              >
+                Sharing
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "stats" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("stats")}
+              >
+                Statistics
+              </button>
+            </div>
+
+            {showTextGenerator && (
+              <div className="text-generator-panel">
+                <TextToPortfolioInput
+                  onGenerate={handleGenerateFromText}
+                  onClose={() => setShowTextGenerator(false)}
+                />
+              </div>
+            )}
+
+            {!showTextGenerator && (
+              <button
+                className="button-text-generator"
+                onClick={() => setShowTextGenerator(true)}
+              >
+                ✨ Generate from Text
+              </button>
+            )}
           </div>
 
-          {showTextGenerator && (
-            <div className="text-generator-panel">
-              <TextToPortfolioInput
-                onGenerate={handleGenerateFromText}
-                onClose={() => setShowTextGenerator(false)}
-              />
-            </div>
-          )}
-
-          {!showTextGenerator && (
-            <button
-              className="button-text-generator"
-              onClick={() => setShowTextGenerator(true)}
-            >
-              ✨ Generate from Text
-            </button>
-          )}
-        </div>
-
-        <div className="constructor-main">
-          {activeTab === "general" && (
-            <div className="tab-content">
-              <h2>General Settings</h2>
-              <div className="form-group">
-                <label>Portfolio Logo</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      setLogoFile(file);
-                      handlePortfolioChange({
-                        logo: URL.createObjectURL(file),
-                      }); // Preview
+          <div className="constructor-main">
+            {activeTab === "general" && (
+              <div className="tab-content">
+                <h2>General Settings</h2>
+                <div className="form-group">
+                  <ImageUpload
+                    label="Portfolio Logo"
+                    value={portfolio.logo || ""}
+                    onChange={(url) => {
+                      handlePortfolioChange({ logo: url });
+                      setLogoFile(null);
+                    }}
+                    recommendedSize="200x50"
+                    maxSize={2 * 1024 * 1024}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Portfolio Slug (URL)</label>
+                  <input
+                    type="text"
+                    value={portfolio.slug}
+                    onChange={(e) =>
+                      handlePortfolioChange({ slug: e.target.value })
                     }
+                    placeholder="my-portfolio"
+                  />
+                  <small>
+                    Your portfolio will be available at: /portfolio/
+                    {portfolio.slug}
+                  </small>
+                </div>
+                <div className="form-group">
+                  <label>Visibility</label>
+                  <select
+                    value={portfolio.visibility}
+                    onChange={(e) =>
+                      handlePortfolioChange({ visibility: e.target.value })
+                    }
+                  >
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                    <option value="unlisted">Unlisted</option>
+                  </select>
+                  <small>
+                    Public: Visible to everyone | Private: Only you can see |
+                    Unlisted: Only accessible via direct link
+                  </small>
+                </div>
+
+                <div className="form-group">
+                  <label>Portfolio Status</label>
+                  <select
+                    value={portfolio.status || "draft"}
+                    onChange={(e) =>
+                      handlePortfolioChange({ status: e.target.value })
+                    }
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                  </select>
+                  <small>Draft portfolios are not visible to others</small>
+                </div>
+
+                <div className="form-group">
+                  <label>Portfolio Description</label>
+                  <textarea
+                    value={portfolio.description || ""}
+                    onChange={(e) =>
+                      handlePortfolioChange({ description: e.target.value })
+                    }
+                    placeholder="A brief description of your portfolio"
+                    rows={3}
+                  />
+                  <small>
+                    This description appears in search results and portfolio
+                    listings
+                  </small>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "layout" && (
+              <div className="tab-content">
+                <LayoutSelector
+                  layout={portfolio.layout}
+                  onChange={(layout) => handlePortfolioChange({ layout })}
+                />
+              </div>
+            )}
+
+            {activeTab === "theme" && (
+              <div className="tab-content">
+                <ThemeCustomizer
+                  theme={portfolio.theme}
+                  onChange={(theme) =>
+                    handlePortfolioChange({ theme: normalizeTheme(theme) })
+                  }
+                />
+              </div>
+            )}
+
+            {activeTab === "sections" && (
+              <div className="tab-content">
+                <SectionManager
+                  sections={portfolio.sections}
+                  hero={portfolio.hero}
+                  onChange={(sections, hero) => {
+                    handlePortfolioChange({ sections, hero });
                   }}
                 />
-                {(logoFile || portfolio.logo) && (
-                  <div style={{ marginTop: "1rem" }}>
-                    <img
-                      src={
-                        logoFile
-                          ? URL.createObjectURL(logoFile)
-                          : portfolio.logo
-                      }
-                      alt="Portfolio logo preview"
-                      style={{
-                        maxWidth: "200px",
-                        maxHeight: "100px",
-                        objectFit: "contain",
-                        border: "1px solid var(--border)",
-                        borderRadius: "8px",
-                        padding: "0.5rem",
-                      }}
-                    />
-                    {portfolio.logo && !logoFile && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handlePortfolioChange({ logo: "" });
-                          setLogoFile(null);
-                        }}
-                        style={{
-                          marginTop: "0.5rem",
-                          padding: "0.5rem 1rem",
-                          backgroundColor: "var(--error)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Remove Logo
-                      </button>
-                    )}
-                  </div>
-                )}
-                <small>
-                  Upload a logo image for your portfolio header (recommended:
-                  200x50px or similar aspect ratio)
-                </small>
               </div>
-              <div className="form-group">
-                <label>Portfolio Slug (URL)</label>
-                <input
-                  type="text"
-                  value={portfolio.slug}
-                  onChange={(e) =>
-                    handlePortfolioChange({ slug: e.target.value })
-                  }
-                  placeholder="my-portfolio"
+            )}
+
+            {activeTab === "preview" && (
+              <div className="tab-content preview-content">
+                <PortfolioPreview portfolio={portfolio} />
+              </div>
+            )}
+
+            {activeTab === "seo" && (
+              <div className="tab-content">
+                <SEOSettings
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
                 />
-                <small>
-                  Your portfolio will be available at: /portfolio/
-                  {portfolio.slug}
-                </small>
               </div>
-              <div className="form-group">
-                <label>Visibility</label>
-                <select
-                  value={portfolio.visibility}
-                  onChange={(e) =>
-                    handlePortfolioChange({ visibility: e.target.value })
-                  }
-                >
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                </select>
+            )}
+
+            {activeTab === "social" && (
+              <div className="tab-content">
+                <SocialLinksSettings
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTab === "layout" && (
-            <div className="tab-content">
-              <LayoutSelector
-                layout={portfolio.layout}
-                onChange={(layout) => handlePortfolioChange({ layout })}
-              />
-            </div>
-          )}
+            {activeTab === "styling" && (
+              <div className="tab-content">
+                <AdvancedStyling
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
+              </div>
+            )}
 
-          {activeTab === "theme" && (
-            <div className="tab-content">
-              <ThemeCustomizer
-                theme={portfolio.theme}
-                onChange={(theme) =>
-                  handlePortfolioChange({ theme: normalizeTheme(theme) })
-                }
-              />
-            </div>
-          )}
+            {activeTab === "code" && (
+              <div className="tab-content">
+                <CustomCodeSettings
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
+              </div>
+            )}
 
-          {activeTab === "sections" && (
-            <div className="tab-content">
-              <SectionManager
-                sections={portfolio.sections}
-                hero={portfolio.hero}
-                onChange={(sections, hero) => {
-                  handlePortfolioChange({ sections, hero });
-                }}
-              />
-            </div>
-          )}
+            {activeTab === "actions" && (
+              <div className="tab-content">
+                <PortfolioActions
+                  portfolio={portfolio}
+                  onPortfolioChange={handlePortfolioChange}
+                  onNavigate={navigate}
+                />
+              </div>
+            )}
 
-          {activeTab === "preview" && (
-            <div className="tab-content preview-content">
-              <PortfolioPreview portfolio={portfolio} />
-            </div>
-          )}
+            {activeTab === "hero" && (
+              <div className="tab-content">
+                <HeroImageSettings
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
+              </div>
+            )}
+
+            {activeTab === "background" && (
+              <div className="tab-content">
+                <BackgroundSettings
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
+              </div>
+            )}
+
+            {activeTab === "gallery" && (
+              <div className="tab-content">
+                <ImageGallery
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
+              </div>
+            )}
+
+            {activeTab === "fonts" && (
+              <div className="tab-content">
+                <FontSettings
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
+              </div>
+            )}
+
+            {activeTab === "favicon" && (
+              <div className="tab-content">
+                <FaviconSettings
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
+              </div>
+            )}
+
+            {activeTab === "sharing" && (
+              <div className="tab-content">
+                <SharingSettings
+                  portfolio={portfolio}
+                  onChange={handlePortfolioChange}
+                />
+              </div>
+            )}
+
+            {activeTab === "stats" && (
+              <div className="tab-content">
+                <PortfolioStatistics portfolio={portfolio} />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );

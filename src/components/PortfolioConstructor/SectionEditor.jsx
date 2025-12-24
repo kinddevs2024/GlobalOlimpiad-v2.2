@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import CertificateUploader from "./CertificateUploader";
+import ImageUpload from "./ImageUpload";
 
 const SectionEditor = ({ section, onUpdate, onClose }) => {
   const [title, setTitle] = useState(section.title || "");
@@ -56,7 +57,13 @@ const SectionEditor = ({ section, onUpdate, onClose }) => {
           <div className="achievements-editor">
             <label>Achievements</label>
             {(content.achievements || content.items || []).map((achievement, index) => (
-              <div key={index} className="achievement-item-editor">
+              <div key={index} className="achievement-item-editor" style={{
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1rem',
+                backgroundColor: 'var(--bg-secondary)',
+              }}>
                 <input
                   type="text"
                   placeholder="Achievement Title"
@@ -65,6 +72,13 @@ const SectionEditor = ({ section, onUpdate, onClose }) => {
                     const achievements = [...(content.achievements || content.items || [])];
                     achievements[index] = { ...achievements[index], title: e.target.value };
                     setContent({ ...content, achievements });
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    marginBottom: '0.5rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
                   }}
                 />
                 <textarea
@@ -76,6 +90,60 @@ const SectionEditor = ({ section, onUpdate, onClose }) => {
                     setContent({ ...content, achievements });
                   }}
                   rows={2}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    marginBottom: '0.5rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    resize: 'vertical',
+                  }}
+                />
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <ImageUpload
+                    label="Achievement Image/Certificate"
+                    value={achievement.image || achievement.certificateUrl || ""}
+                    onChange={(url) => {
+                      const achievements = [...(content.achievements || content.items || [])];
+                      achievements[index] = { ...achievements[index], image: url, certificateUrl: url };
+                      setContent({ ...content, achievements });
+                    }}
+                    recommendedSize="800x600"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Organization"
+                  value={achievement.organization || ""}
+                  onChange={(e) => {
+                    const achievements = [...(content.achievements || content.items || [])];
+                    achievements[index] = { ...achievements[index], organization: e.target.value };
+                    setContent({ ...content, achievements });
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    marginBottom: '0.5rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Year"
+                  value={achievement.year || ""}
+                  onChange={(e) => {
+                    const achievements = [...(content.achievements || content.items || [])];
+                    achievements[index] = { ...achievements[index], year: e.target.value };
+                    setContent({ ...content, achievements });
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    marginBottom: '0.5rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                  }}
                 />
                 <button
                   onClick={() => {
@@ -83,6 +151,14 @@ const SectionEditor = ({ section, onUpdate, onClose }) => {
                       (_, i) => i !== index
                     );
                     setContent({ ...content, achievements });
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'var(--error)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
                   }}
                 >
                   Remove
@@ -93,6 +169,15 @@ const SectionEditor = ({ section, onUpdate, onClose }) => {
               onClick={() => {
                 const achievements = [...(content.achievements || content.items || []), {}];
                 setContent({ ...content, achievements });
+              }}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: 'var(--accent)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
               }}
             >
               + Add Achievement
@@ -129,13 +214,29 @@ const SectionEditor = ({ section, onUpdate, onClose }) => {
                 <input
                   type="text"
                   placeholder="Project Link"
-                  value={project.link || ""}
+                  value={project.link || project.links?.live || ""}
                   onChange={(e) => {
                     const projects = [...(content.projects || content.items || [])];
-                    projects[index] = { ...projects[index], link: e.target.value };
+                    projects[index] = {
+                      ...projects[index],
+                      link: e.target.value,
+                      links: { ...projects[index].links, live: e.target.value },
+                    };
                     setContent({ ...content, projects });
                   }}
                 />
+                <div style={{ marginTop: "0.5rem" }}>
+                  <ImageUpload
+                    label="Project Image"
+                    value={project.image || ""}
+                    onChange={(url) => {
+                      const projects = [...(content.projects || content.items || [])];
+                      projects[index] = { ...projects[index], image: url };
+                      setContent({ ...content, projects });
+                    }}
+                    recommendedSize="800x600"
+                  />
+                </div>
                 <button
                   onClick={() => {
                     const projects = (content.projects || content.items || []).filter(
@@ -293,4 +394,5 @@ const SectionEditor = ({ section, onUpdate, onClose }) => {
 };
 
 export default SectionEditor;
+
 

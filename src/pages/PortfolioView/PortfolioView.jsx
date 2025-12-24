@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import PortfolioRenderer from "../../components/Portfolio/PortfolioRenderer";
+import PortfolioHead from "../../components/Portfolio/PortfolioHead";
 import { portfolioAPI } from "../../services/portfolioAPI";
 import { usePortfolioAnalytics } from "../../hooks/usePortfolioAnalytics";
 import { normalizeTheme, DEFAULT_THEME } from "../../utils/portfolioThemes";
@@ -111,22 +112,27 @@ const normalizePortfolioFromBackend = (backendPortfolio) => {
   }
 
   // Ensure hero section exists - preserve backend hero data if it exists
-  if (!normalized.hero) {
+  // Handle both null and undefined, and preserve actual values (including null)
+  if (!normalized.hero || typeof normalized.hero !== "object") {
     normalized.hero = {
-      title: "",
-      subtitle: "",
-      image: "",
-      ctaText: "",
-      ctaLink: null, // Allow null
+      title: null,
+      subtitle: null,
+      description: null,
+      image: null,
+      avatar: null,
+      ctaText: null,
+      ctaLink: null,
     };
   } else {
-    // Ensure all hero fields are present, preserving backend values
+    // Ensure all hero fields are present, preserving backend values (including null)
     normalized.hero = {
-      title: normalized.hero.title || "",
-      subtitle: normalized.hero.subtitle || "",
-      image: normalized.hero.image || "",
-      ctaText: normalized.hero.ctaText || "",
-      ctaLink: normalized.hero.ctaLink !== undefined ? normalized.hero.ctaLink : null, // Preserve null if set
+      title: normalized.hero.title !== undefined ? normalized.hero.title : null,
+      subtitle: normalized.hero.subtitle !== undefined ? normalized.hero.subtitle : null,
+      description: normalized.hero.description !== undefined ? normalized.hero.description : null,
+      image: normalized.hero.image !== undefined ? normalized.hero.image : null,
+      avatar: normalized.hero.avatar !== undefined ? normalized.hero.avatar : null,
+      ctaText: normalized.hero.ctaText !== undefined ? normalized.hero.ctaText : null,
+      ctaLink: normalized.hero.ctaLink !== undefined ? normalized.hero.ctaLink : null,
     };
   }
   
@@ -144,6 +150,24 @@ const normalizePortfolioFromBackend = (backendPortfolio) => {
   } else if (!normalized.visibility) {
     normalized.visibility = "public";
   }
+  
+  // Preserve new features: SEO, social links, sharing, analytics, custom code, favicon, etc.
+  // These fields are passed through as-is from backend
+  if (!normalized.seo) normalized.seo = {};
+  if (!normalized.socialLinks) normalized.socialLinks = [];
+  if (!normalized.sharing) normalized.sharing = {};
+  if (!normalized.analytics) normalized.analytics = {};
+  if (!normalized.customCode) normalized.customCode = {};
+  if (!normalized.favicon) normalized.favicon = '';
+  if (!normalized.background) normalized.background = {};
+  if (!normalized.fonts) normalized.fonts = {};
+  // Handle both gallery and imageGallery field names
+  if (!normalized.gallery && !normalized.imageGallery) {
+    normalized.imageGallery = [];
+  } else if (normalized.gallery && !normalized.imageGallery) {
+    normalized.imageGallery = normalized.gallery;
+  }
+  if (!normalized.statistics) normalized.statistics = {};
   
   return normalized;
 };
@@ -280,8 +304,23 @@ const PortfolioView = () => {
 
   // Backend handles privacy - if we get here, portfolio is accessible
 
+  // Ensure portfolio is valid before rendering
+  if (!portfolio || typeof portfolio !== 'object') {
+    return (
+      <div className="portfolio-view">
+        <div className="portfolio-view-error">
+          <div className="error-icon">⚠️</div>
+          <h2>Invalid Portfolio Data</h2>
+          <p>The portfolio data is invalid or corrupted.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Wrap with verification provider for all viewers
   const portfolioContent = (
+    <>
+      <PortfolioHead portfolio={portfolio} />
     <div className="portfolio-page-container">
       <VerificationProvider portfolio={portfolio}>
         {isOwner ? (
@@ -298,10 +337,13 @@ const PortfolioView = () => {
             </div>
           </PortfolioEditorProvider>
         ) : (
+            <div className="portfolio-view-container">
           <PortfolioRenderer portfolio={portfolio} sectionId={sectionId} isOwner={false} />
+            </div>
         )}
       </VerificationProvider>
     </div>
+    </>
   );
 
   return portfolioContent;

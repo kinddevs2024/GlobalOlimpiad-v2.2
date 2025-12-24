@@ -27,6 +27,9 @@ export const portfolioAPI = {
   // Upload certificate file
   uploadCertificate: (file, onUploadProgress) => {
     const formData = new FormData();
+    // Try "file" first as it's the most common field name
+    formData.append("file", file);
+    // Also append as "certificate" for compatibility
     formData.append("certificate", file);
     return api.post("/upload/certificates", formData, {
       headers: {
@@ -49,6 +52,9 @@ export const portfolioAPI = {
   // Upload portfolio logo
   uploadLogo: (logoFile, onUploadProgress) => {
     const formData = new FormData();
+    // Try "file" first as it's the most common field name
+    formData.append("file", logoFile);
+    // Also append as "logo" for compatibility
     formData.append("logo", logoFile);
     return api.post("/upload/portfolio-logo", formData, {
       headers: {

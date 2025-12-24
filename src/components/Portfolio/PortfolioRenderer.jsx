@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import PortfolioThemeProvider from "./ThemeProvider";
 import PortfolioHeader from "./PortfolioHeader";
 import HeroSection from "./sections/HeroSection";
+import SocialLinks from "./SocialLinks";
+import ShareButtons from "./ShareButtons";
 import EditableSectionWrapper from "../PortfolioEditor/EditableSectionWrapper";
 import DraggableSection from "../PortfolioEditor/DraggableSection";
 import PortfolioStatusBadge from "../PortfolioStatusBadge/PortfolioStatusBadge";
@@ -153,8 +155,15 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
   const containerWidth = displayPortfolio?.theme?.containerWidth || "medium";
 
   // Check if we have any content to render
-  const displayHero = displayPortfolio?.hero || hero;
-  const hasHeroContent = displayHero && (displayHero.title || displayHero.subtitle || displayHero.image);
+  const displayHero = displayPortfolio?.hero || hero || {};
+  // Check if hero has any content (handle null/undefined/empty string)
+  const hasHeroContent = displayHero && (
+    (displayHero.title && displayHero.title.trim && displayHero.title.trim() !== "") ||
+    (displayHero.subtitle && displayHero.subtitle.trim && displayHero.subtitle.trim() !== "") ||
+    (displayHero.description && displayHero.description.trim && displayHero.description.trim() !== "") ||
+    (displayHero.image && displayHero.image !== null && displayHero.image !== "") ||
+    (displayHero.avatar && displayHero.avatar !== null && displayHero.avatar !== "")
+  );
   const hasSections = sortedSections.length > 0;
 
   // For multi-page layouts, filter sections based on sectionId
@@ -316,6 +325,107 @@ const PortfolioRenderer = ({ portfolio, sectionId = null, isOwner = false }) => 
           <div style={{ padding: "2rem", textAlign: "center" }}>
             <p>No sections to display.</p>
           </div>
+        )}
+
+        {/* Image Gallery */}
+        {displayPortfolio?.imageGallery && Array.isArray(displayPortfolio.imageGallery) && displayPortfolio.imageGallery.length > 0 && (
+          <motion.div
+            initial={shouldAnimate ? "hidden" : false}
+            animate={shouldAnimate ? "visible" : false}
+            variants={sectionVariants}
+            className="portfolio-image-gallery-section"
+            style={{ padding: "4rem 2rem" }}
+          >
+            <h2 className="portfolio-section-title" style={{ marginBottom: "2rem", textAlign: "center" }}>
+              Gallery
+            </h2>
+            <div className="portfolio-image-gallery" style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "1.5rem",
+              maxWidth: "1200px",
+              margin: "0 auto",
+            }}>
+              {displayPortfolio.imageGallery.map((image, index) => {
+                const imageUrl = image.url || image;
+                const getImageUrl = (url) => {
+                  if (!url) return '';
+                  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+                    return url;
+                  }
+                  if (url.startsWith('/')) {
+                    // Get API base URL - use Vite env variable if available, otherwise use current origin
+                    let apiBaseUrl = window.location.origin;
+                    try {
+                      // Try Vite environment variable first
+                      if (import.meta && import.meta.env && import.meta.env.VITE_API_URL) {
+                        apiBaseUrl = import.meta.env.VITE_API_URL;
+                      }
+                    } catch (e) {
+                      // If import.meta is not available, use window.location.origin (already set)
+                    }
+                    return `${apiBaseUrl}${url}`;
+                  }
+                  return url;
+                };
+                return (
+                  <div
+                    key={image.id || index}
+                    className="portfolio-gallery-item"
+                    style={{
+                      position: "relative",
+                      paddingTop: "75%",
+                      backgroundColor: "var(--bg-tertiary)",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <img
+                      src={getImageUrl(imageUrl)}
+                      alt={image.title || `Gallery image ${index + 1}`}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                      onError={(e) => {
+                        console.error('Failed to load gallery image:', imageUrl);
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    {(image.title || image.description) && (
+                      <div style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
+                        padding: "1rem",
+                        color: "white",
+                      }}>
+                        {image.title && <h3 style={{ margin: 0, fontSize: "1rem", marginBottom: "0.25rem" }}>{image.title}</h3>}
+                        {image.description && <p style={{ margin: 0, fontSize: "0.875rem", opacity: 0.9 }}>{image.description}</p>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Social Links */}
+        {displayPortfolio?.socialLinks && displayPortfolio.socialLinks.length > 0 && (
+          <SocialLinks socialLinks={displayPortfolio.socialLinks} />
+        )}
+
+        {/* Share Buttons */}
+        {displayPortfolio?.sharing && (
+          <ShareButtons portfolio={displayPortfolio} sharing={displayPortfolio.sharing} />
         )}
 
         {/* Portfolio Footer Credit */}

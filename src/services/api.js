@@ -31,10 +31,19 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Only redirect to auth if it's a 401 AND the request was for an authenticated endpoint
+    // Don't redirect for public portfolio requests (they can return 401 if private)
+    const isPublicPortfolioRequest = error.config?.url?.includes('/portfolio/') && 
+                                     error.config?.method === 'get' &&
+                                     !error.config?.url?.includes('/portfolio/my');
+    
+    if (error.response?.status === 401 && !isPublicPortfolioRequest) {
       removeToken();
       removeUser();
-      window.location.href = "/auth";
+      // Only redirect if we're not already on an auth page
+      if (!window.location.pathname.startsWith('/auth')) {
+        window.location.href = "/auth";
+      }
     }
     return Promise.reject(error);
   }
