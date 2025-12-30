@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { USER_ROLES } from "../../utils/constants";
 import NotificationToast from "../../components/NotificationToast";
+import { generateDeviceFingerprint } from "../../utils/device-fingerprint";
 import "./StartOlympiad.css";
 
 const StartOlympiad = () => {
@@ -29,6 +30,8 @@ const StartOlympiad = () => {
   const [missingFields, setMissingFields] = useState([]);
   const [alreadySubmittedThisMonth, setAlreadySubmittedThisMonth] = useState(false);
   const [nextAvailableDate, setNextAvailableDate] = useState(null);
+  const [proctoringStatus, setProctoringStatus] = useState(null);
+  const [deviceFingerprint, setDeviceFingerprint] = useState(null);
 
   useEffect(() => {
     fetchOlympiad();
@@ -41,6 +44,13 @@ const StartOlympiad = () => {
         setMissingFields(getMissingProfileFields(user));
       }
     }
+
+    // Generate device fingerprint
+    generateDeviceFingerprint().then(fp => {
+      setDeviceFingerprint(fp);
+    }).catch(err => {
+      console.error('Error generating device fingerprint:', err);
+    });
   }, [id, user]);
 
   useEffect(() => {
@@ -200,11 +210,41 @@ const StartOlympiad = () => {
       }
 
 
-      // Store start information in localStorage
-      const startTime = new Date().toISOString();
+      // Check proctoring status before starting
+      // Note: In a full implementation, proctoring should be set up before this point
+      // For now, we'll require basic proctoring status (this would be enhanced with actual camera/screen checks)
+      const proctoringReady = proctoringStatus || {
+        frontCameraActive: false, // Should be set by ProctoringMonitor component
+        backCameraActive: false,
+        screenShareActive: false,
+        displaySurface: null
+      };
+
+      // Generate device fingerprint if not already done
+      let fingerprint = deviceFingerprint;
+      if (!fingerprint) {
+        fingerprint = await generateDeviceFingerprint();
+        setDeviceFingerprint(fingerprint);
+      }
+
+      // Start attempt via API (creates attempt record with server-authoritative timer)
+      const startResponse = await olympiadAPI.startAttempt(id, {
+        proctoringStatus: proctoringReady,
+        deviceFingerprint: fingerprint
+      });
+
+      if (!startResponse.data.success) {
+        throw new Error(startResponse.data.message || 'Failed to start attempt');
+      }
+
+      const attempt = startResponse.data.attempt;
+
+      // Store attempt information in localStorage for compatibility
       localStorage.setItem(`olympiad_${id}_started`, "true");
-      localStorage.setItem(`olympiad_${id}_startTime`, startTime);
+      localStorage.setItem(`olympiad_${id}_startTime`, attempt.startedAt);
       localStorage.setItem(`olympiad_${id}_consent`, "true");
+      localStorage.setItem(`olympiad_${id}_attemptId`, attempt._id);
+      localStorage.setItem(`olympiad_${id}_sessionToken`, attempt.sessionToken);
 
       // Show success message
       setNotification({

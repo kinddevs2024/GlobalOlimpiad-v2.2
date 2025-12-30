@@ -557,3 +557,4 @@ The navigation bar provides quick access to:
 ---
 
 **Last Updated**: Based on GlobalOlimpiad-v2.2 codebase
+

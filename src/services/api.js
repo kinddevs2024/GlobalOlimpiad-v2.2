@@ -88,6 +88,13 @@ export const olympiadAPI = {
   getAll: () => api.get("/olympiads"),
   getById: (id) => api.get(`/olympiads/${id}`),
   submit: (id, data) => api.post(`/olympiads/${id}/submit`, data),
+  // Anti-cheat endpoints
+  startAttempt: (id, data) => api.post(`/olympiads/${id}/start`, data),
+  getAttempt: (id) => api.get(`/olympiads/${id}/attempt`),
+  getQuestion: (id, questionIndex) => api.get(`/olympiads/${id}/question/${questionIndex}`),
+  submitAnswer: (id, data) => api.post(`/olympiads/${id}/answer`, data),
+  skipQuestion: (id, data) => api.post(`/olympiads/${id}/skip`, data),
+  reportViolation: (id, data) => api.post(`/olympiads/${id}/violation`, data),
   getResults: (olympiadId, userId = null) => {
     // Backend expects: GET /api/olympiads/results?olympiadId=xxx&userId=xxx
     // Backend returns full list of results for that olympiad

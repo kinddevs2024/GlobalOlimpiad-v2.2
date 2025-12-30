@@ -4,7 +4,7 @@ import { VIDEO_WIDTH, VIDEO_HEIGHT, API_BASE_URL, CAMERA_CAPTURE_INTERVAL } from
 import { generateVideoFilename, generateExitScreenshotFilename } from '../utils/helpers';
 import './ProctoringMonitor.css';
 
-const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatusChange }) => {
+const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatusChange, onProctoringStatusChange }) => {
   const cameraVideoRef = useRef(null);
   const screenVideoRef = useRef(null);
   
@@ -228,6 +228,16 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
             cameraVideoRef.current.srcObject = cameraStream;
             setCameraActive(true);
             setCameraError(null);
+            
+            // Notify parent component of proctoring status
+            if (onProctoringStatusChange) {
+              onProctoringStatusChange({
+                frontCameraActive: true,
+                backCameraActive: false,
+                screenShareActive: screenActive,
+                displaySurface: null // Screen not yet active
+              });
+            }
           }
         } catch (err) {
           setCameraError('Camera access denied');
@@ -254,7 +264,25 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
           // Validate that full screen is being shared (not window/tab)
           const videoTrack = screenStream.getVideoTracks()[0];
           
-          // Wait for video metadata to load and validate dimensions
+          // Check displaySurface property (Screen Capture API)
+          const settings = videoTrack.getSettings();
+          const displaySurface = settings.displaySurface || settings.logicalSurface;
+          
+          // displaySurface can be: 'monitor', 'window', 'browser', or 'application'
+          // We require 'monitor' for full screen sharing
+          if (displaySurface && displaySurface !== 'monitor') {
+            // Stop the stream if not full screen
+            videoTrack.stop();
+            screenStream.getTracks().forEach(track => track.stop());
+            screenStreamRef.current = null;
+            setScreenError(`Full screen (monitor) sharing required. You selected: ${displaySurface}`);
+            setScreenActive(false);
+            // Show alert to user
+            alert('⚠️ Full screen sharing required!\n\nPlease stop sharing and select "Entire Screen" (monitor) instead of a window, tab, or browser.');
+            return;
+          }
+          
+          // Wait for video metadata to load and validate dimensions (additional validation)
           await new Promise((resolve) => {
             const checkDimensions = () => {
               if (screenVideoRef.current && screenVideoRef.current.readyState >= 2) {
@@ -272,7 +300,8 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
                                          trackLabel.includes('entire') ||
                                          trackLabel.includes('display');
 
-                if (!isFullScreen && !hasScreenInLabel && width > 0) {
+                // If displaySurface check passed but dimensions suggest it's not full screen, warn
+                if (!isFullScreen && !hasScreenInLabel && width > 0 && displaySurface !== 'monitor') {
                   // Stop the stream if not full screen
                   videoTrack.stop();
                   screenStream.getTracks().forEach(track => track.stop());
@@ -288,6 +317,17 @@ const ProctoringMonitor = ({ olympiadId, userId, olympiadTitle, onRecordingStatu
                 // Validation passed
                 setScreenActive(true);
                 setScreenError(null);
+                
+                // Notify parent component of proctoring status
+                if (onProctoringStatusChange) {
+                  onProctoringStatusChange({
+                    frontCameraActive: cameraActive,
+                    backCameraActive: false, // Can be enhanced if back camera is supported
+                    screenShareActive: true,
+                    displaySurface: displaySurface || 'monitor' // Use detected displaySurface
+                  });
+                }
+                
                 resolve();
               } else if (screenVideoRef.current) {
                 setTimeout(checkDimensions, 200);

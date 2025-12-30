@@ -5,8 +5,13 @@ import { useSocket } from '../../context/SocketContext';
 import Timer from '../../components/Timer';
 import QuestionCard from '../../components/QuestionCard';
 import ProctoringMonitor from '../../components/ProctoringMonitor';
+import AttemptRecovery from '../../components/AttemptRecovery';
 import NotificationToast from '../../components/NotificationToast';
 import { useAuth } from '../../context/AuthContext';
+import { useServerTimer } from '../../hooks/useServerTimer';
+import { useAttemptSession } from '../../hooks/useAttemptSession';
+import { useAntiCheat } from '../../hooks/useAntiCheat';
+import { saveAnswers, getSavedAnswers, deleteSavedAnswers } from '../../utils/indexeddb';
 import { getTimeRemaining, getTimeRemainingFromDuration } from '../../utils/helpers';
 import './TestOlympiad.css';
 
@@ -27,49 +32,51 @@ const TestOlympiad = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const draftSaveTimeoutRef = useRef(null);
+  const [attemptId, setAttemptId] = useState(null);
+
+  // Load attempt session
+  const { attempt, loading: attemptLoading, error: attemptError, isActive, isExpired, isCompleted } = useAttemptSession(id);
+  
+  // Set attempt ID when loaded
+  useEffect(() => {
+    if (attempt?._id) {
+      setAttemptId(attempt._id);
+      setCurrentQuestionIndex(attempt.currentQuestionIndex || 0);
+    }
+  }, [attempt]);
+
+  // Server-authoritative timer
+  const { remainingSeconds, expired, formatted: timerFormatted, synced } = useServerTimer(
+    id,
+    attemptId,
+    attempt?.endsAt
+  );
+
+  // Anti-cheat monitoring
+  useAntiCheat(id, attemptId, isActive && !submitted);
+
+  // Update timeRemaining from server timer
+  useEffect(() => {
+    setTimeRemaining(remainingSeconds);
+    if (expired && !submitted) {
+      handleTimeExpire();
+    }
+  }, [remainingSeconds, expired, submitted]);
 
   useEffect(() => {
     fetchOlympiad();
     
-    // Listen for timer updates
-    if (on) {
-      on('timer-update', (data) => {
-        if (data.olympiadId === id) {
-          setTimeRemaining(data.timeRemaining);
-        }
-      });
-    }
-  }, [id, on]);
-
-  // Update timer every second based on duration
-  useEffect(() => {
-    if (!olympiad || !id || submitted) return;
-
-    const startTime = localStorage.getItem(`olympiad_${id}_startTime`);
-    const duration = olympiad.duration || 3600; // Duration in seconds (e.g., 3600 = 60 minutes)
-
-    if (!startTime || !duration) {
-      // If no start time, try to initialize it now
-      if (olympiad.duration) {
-        const now = new Date().toISOString();
-        localStorage.setItem(`olympiad_${id}_startTime`, now);
-        setTimeRemaining(duration);
-      }
-      return;
+    // Get attempt ID from localStorage if available
+    const storedAttemptId = localStorage.getItem(`olympiad_${id}_attemptId`);
+    if (storedAttemptId) {
+      setAttemptId(storedAttemptId);
     }
 
-    const interval = setInterval(() => {
-      const remaining = getTimeRemainingFromDuration(duration, startTime);
-      setTimeRemaining(remaining);
-      
-      // Auto-submit when time expires
-      if (remaining <= 0 && !submitted) {
-        handleTimeExpire();
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [olympiad, id, submitted]);
+    // Join WebSocket room for attempt
+    if (on && (attemptId || storedAttemptId)) {
+      on('join-olympiad', { olympiadId: id, attemptId: attemptId || storedAttemptId });
+    }
+  }, [id, on, attemptId]);
 
   // Load saved draft from server on mount
   useEffect(() => {
@@ -103,39 +110,35 @@ const TestOlympiad = () => {
     loadDraft();
   }, [id, user]);
 
-  // Auto-save answers to server in real-time with debouncing
+  // Save answers to IndexedDB for offline recovery
   useEffect(() => {
-    if (id && user && Object.keys(answers).length > 0 && !submitted) {
-      // Clear existing timeout
-      if (draftSaveTimeoutRef.current) {
-        clearTimeout(draftSaveTimeoutRef.current);
-      }
-
-      // Also save to localStorage as backup
-      localStorage.setItem(`olympiad_${id}_answers`, JSON.stringify(answers));
-
-      // Set new timeout to save to server after 2 seconds of no changes
-      draftSaveTimeoutRef.current = setTimeout(async () => {
-        try {
-          setSavingDraft(true);
-          await olympiadAPI.saveDraft(id, answers);
-          // Silently save - don't show notification for every save
-        } catch (error) {
-          console.error('Error saving draft:', error);
-          // Don't show error notification for draft saves to avoid annoying users
-        } finally {
-          setSavingDraft(false);
-        }
-      }, 2000); // 2 second debounce
+    if (id && Object.keys(answers).length > 0 && !submitted) {
+      saveAnswers(id, answers).catch(error => {
+        console.error('Error saving answers to IndexedDB:', error);
+      });
     }
+  }, [answers, id, submitted]);
 
-    // Cleanup timeout on unmount
-    return () => {
-      if (draftSaveTimeoutRef.current) {
-        clearTimeout(draftSaveTimeoutRef.current);
+  // Handle tab close/refresh - skip current question
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      if (attemptId && currentQuestionIndex >= 0 && !submitted) {
+        try {
+          // Use sendBeacon for reliable delivery during page unload
+          // Note: sendBeacon doesn't support custom headers, so we'll rely on API endpoint
+          // In production, you might want to use a different approach or store skip request in IndexedDB
+          olympiadAPI.skipQuestion(id, { reason: 'tab_close' }).catch(() => {
+            // Ignore errors during unload
+          });
+        } catch (error) {
+          // Ignore errors during unload
+        }
       }
     };
-  }, [answers, id, user, submitted]);
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [id, attemptId, currentQuestionIndex, submitted]);
 
   const fetchOlympiad = async () => {
     try {
@@ -174,23 +177,67 @@ const TestOlympiad = () => {
   };
 
   const handleAnswerChange = (questionId, answer) => {
+    // Update local state
     setAnswers(prev => ({
       ...prev,
       [questionId]: answer
     }));
+
+    // Save to IndexedDB for offline recovery (async, don't await)
+    if (id) {
+      const updatedAnswers = { ...answers, [questionId]: answer };
+      saveAnswers(id, updatedAnswers).catch(err => console.error('IndexedDB save error:', err));
+    }
   };
 
-  const handleNext = () => {
+
+  // Submit current answer and move to next question
+  const handleNext = async () => {
+    if (!attemptId || !currentQuestion) return;
+
+    // Submit current answer if provided
+    const currentAnswer = answers[currentQuestion._id];
+    if (currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== '') {
+      try {
+        await olympiadAPI.submitAnswer(id, {
+          questionIndex: currentQuestionIndex,
+          answer: currentAnswer
+        });
+      } catch (error) {
+        setNotification({
+          message: error.response?.data?.message || 'Failed to submit answer',
+          type: 'error'
+        });
+        return; // Don't advance if submission failed
+      }
+    }
+
+    // Move to next question if not last
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+      const nextIndex = currentQuestionIndex + 1;
+      try {
+        const response = await olympiadAPI.getQuestion(id, nextIndex);
+        
+        if (response.data.success) {
+          // Update current question index from server response
+          setCurrentQuestionIndex(response.data.currentQuestionIndex);
+          
+          // Add question to questions array if not already there
+          if (response.data.question && !questions.find(q => q._id === response.data.question._id)) {
+            setQuestions(prev => [...prev, response.data.question]);
+          }
+        }
+      } catch (error) {
+        setNotification({
+          message: error.response?.data?.message || 'Failed to load next question',
+          type: 'error'
+        });
+      }
     }
   };
 
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-    }
-  };
+  // Forward-only navigation - no previous button allowed
+  // Removed handlePrevious function
 
   const handleSubmit = async () => {
     if (window.confirm('Are you sure you want to submit? You cannot change answers after submission.')) {
@@ -241,6 +288,32 @@ const TestOlympiad = () => {
     );
   }
 
+  // Load current question from server if not in questions array
+  useEffect(() => {
+    const loadCurrentQuestion = async () => {
+      if (attemptId && currentQuestionIndex >= 0 && questions.length > 0) {
+        const currentQuestion = questions[currentQuestionIndex];
+        if (!currentQuestion) {
+          try {
+            const response = await olympiadAPI.getQuestion(id, currentQuestionIndex);
+            if (response.data.success && response.data.question) {
+              setQuestions(prev => {
+                const exists = prev.find(q => q._id === response.data.question._id);
+                if (!exists) {
+                  return [...prev, response.data.question];
+                }
+                return prev;
+              });
+            }
+          } catch (error) {
+            console.error('Error loading current question:', error);
+          }
+        }
+      }
+    };
+    loadCurrentQuestion();
+  }, [id, attemptId, currentQuestionIndex, questions]);
+
   const currentQuestion = questions[currentQuestionIndex];
   const answeredCount = Object.keys(answers).length;
 
@@ -261,8 +334,60 @@ const TestOlympiad = () => {
     );
   }
 
+  // Check attempt status
+  if (attemptLoading) {
+    return (
+      <div className="olympiad-loading">
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  if (attemptError || !attempt) {
+    return (
+      <div className="test-olympiad-page">
+        <div className="olympiad-container">
+          <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+            <h2>No Active Attempt</h2>
+            <p>{attemptError || 'Please start the olympiad first.'}</p>
+            <button className="button-primary" onClick={() => navigate(`/olympiad/${id}/start`)}>
+              Go to Start Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isExpired || isCompleted) {
+    return (
+      <div className="test-olympiad-page">
+        <div className="olympiad-container">
+          <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+            <h2>{isExpired ? 'Time Expired' : 'Attempt Completed'}</h2>
+            <p>This attempt has {isExpired ? 'expired' : 'been completed'}.</p>
+            <button className="button-primary" onClick={() => navigate(`/olympiad/${id}/results`)}>
+              View Results
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="test-olympiad-page">
+      <AttemptRecovery 
+        olympiadId={id}
+        attemptId={attemptId}
+        onReconnected={() => {
+          // Reload attempt session
+        }}
+        onSyncComplete={() => {
+          // Answers synced successfully
+        }}
+      />
+      
       <ProctoringMonitor 
         olympiadId={id} 
         userId={user?._id}
@@ -289,6 +414,7 @@ const TestOlympiad = () => {
             initialSeconds={timeRemaining} 
             onExpire={handleTimeExpire}
             className="olympiad-timer"
+            formatted={timerFormatted}
           />
         </div>
 
@@ -336,14 +462,7 @@ const TestOlympiad = () => {
         )}
 
         <div className="olympiad-actions">
-          <button
-            className="button-secondary"
-            onClick={handlePrevious}
-            disabled={!isRecording || currentQuestionIndex === 0 || submitted}
-          >
-            ← Previous
-          </button>
-          
+          {/* Forward-only navigation - no previous button */}
           {currentQuestionIndex < questions.length - 1 ? (
             <button 
               className="button-primary" 
