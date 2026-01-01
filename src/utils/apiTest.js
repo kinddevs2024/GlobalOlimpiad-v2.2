@@ -4,7 +4,7 @@ export const testAPIConnection = async () => {
     // Use the proxy in development (same origin), or full URL in production
     const apiUrl = import.meta.env.DEV 
       ? '/api/health' 
-      : (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/health';
+      : (import.meta.env.VITE_API_URL || 'kinddevs2024-global-olimpiad-v2-2-b.vercel.app/api') + '/health';
     
     const response = await fetch(apiUrl);
     
